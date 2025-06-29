@@ -5,3 +5,4 @@ export { default as StepLibrary } from './StepLibrary';
 export { default as AIAgentBuilder } from './AIAgentBuilder';
 export { default as AIAgentBuilderExact } from './AIAgentBuilderExact';
 export { default as PromptEngineeringWizard } from './PromptEngineeringWizard';
+export { default as PromptTemplateCard } from './PromptTemplateCard';

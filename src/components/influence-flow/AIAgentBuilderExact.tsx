@@ -34,13 +34,16 @@ import {
   Edit3,
   Copy,
   Eye,
-  EyeOff
+  EyeOff,
+  Wand2
 } from 'lucide-react';
 import { useAgentData, useToolTemplates, useKnowledgeTemplates } from '../../hooks/useAgentData';
 import { AgentService } from '../../services/agentService';
 import { addKnowledgeItemToDB, removeKnowledgeItemFromDB, updateKnowledgeItemInDB, addToolToDB, removeToolFromDB, updateToolInDB } from '../../lib/knowledge';
 import ToolConfigurationWizard from './ToolConfigurationWizard';
 import ToolsLibraryModal from './ToolsLibraryModal';
+import PromptEngineeringWizard from './PromptEngineeringWizard';
+import PromptEngineeringDashboard from './PromptEngineeringDashboard';
 
 interface AIAgentBuilderExactProps {
   agentId?: string;
@@ -115,10 +118,11 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
   const { templates: toolTemplates } = useToolTemplates();
   const { templates: knowledgeTemplates } = useKnowledgeTemplates();
   
-  const [activeTab, setActiveTab] = useState<'prompt' | 'tools' | 'knowledge' | 'triggers' | 'escalations' | 'metadata' | 'variables'>('tools');
+  const [activeTab, setActiveTab] = useState<'prompt' | 'tools' | 'knowledge' | 'triggers' | 'escalations' | 'metadata' | 'variables'>('prompt');
   const [testResults, setTestResults] = useState<any>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showPromptWizard, setShowPromptWizard] = useState(false);
 
   // Knowledge wizard states
   const [showKnowledgeWizard, setShowKnowledgeWizard] = useState(false);
@@ -266,6 +270,17 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
     });
   };
 
+  const handleSavePrompt = (promptData: any) => {
+    // Update the agent's system prompt with the generated prompt
+    if (promptData && promptData.generatedPrompt) {
+      setLocalAgent((prev: any) => ({
+        ...prev,
+        system_prompt: promptData.generatedPrompt
+      }));
+    }
+    setShowPromptWizard(false);
+  };
+
   const renderKnowledgeWizard = () => {
     const wizardSteps = [
       { id: 'select_base', title: 'Select Knowledge Base', icon: Database },
@@ -399,8 +414,8 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
                       }}
                       className="p-4 border border-gray-300 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center"
                     >
-                      <Database className="w-6 h-6 text-gray-600 mx-auto mb-2" />
-                      <span className="text-sm font-medium text-gray-900">Add existing knowledge</span>
+                      <Database className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                      <span className="text-sm font-medium text-gray-900 block">Add existing knowledge</span>
                     </button>
                     <button
                       onClick={() => {
@@ -409,8 +424,8 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
                       }}
                       className="p-4 border border-gray-300 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center"
                     >
-                      <Globe className="w-6 h-6 text-gray-600 mx-auto mb-2" />
-                      <span className="text-sm font-medium text-gray-900">Import URL</span>
+                      <Globe className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                      <span className="text-sm font-medium text-gray-900 block">Import URL</span>
                     </button>
                     <button
                       onClick={() => {
@@ -419,8 +434,8 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
                       }}
                       className="p-4 border border-gray-300 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center"
                     >
-                      <Users className="w-6 h-6 text-gray-600 mx-auto mb-2" />
-                      <span className="text-sm font-medium text-gray-900">Import Social Media Content</span>
+                      <Users className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                      <span className="text-sm font-medium text-gray-900 block">Import Social Media Content</span>
                     </button>
                     <button
                       onClick={() => {
@@ -429,8 +444,8 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
                       }}
                       className="p-4 border border-gray-300 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center"
                     >
-                      <FileText className="w-6 h-6 text-gray-600 mx-auto mb-2" />
-                      <span className="text-sm font-medium text-gray-900">Text</span>
+                      <FileText className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                      <span className="text-sm font-medium text-gray-900 block">Text</span>
                     </button>
                   </div>
                 </div>
@@ -664,6 +679,117 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
 
         {/* Tab Content */}
         <div className="bg-white rounded-xl border border-gray-200">
+          {/* Prompt Tab */}
+          {activeTab === 'prompt' && (
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Prompt Configuration</h3>
+                  <p className="text-gray-600">Configure your agent's system prompt and behavior.</p>
+                </div>
+                <button
+                  onClick={() => setShowPromptWizard(true)}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium flex items-center gap-2"
+                >
+                  <Wand2 className="w-4 h-4" />
+                  Prompt Engineering
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    System Prompt
+                  </label>
+                  <textarea
+                    value={localAgent.system_prompt || ''}
+                    onChange={(e) => setLocalAgent(prev => ({
+                      ...prev,
+                      system_prompt: e.target.value
+                    }))}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[300px] font-mono text-sm"
+                    placeholder="You are a helpful AI assistant..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Temperature
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="2"
+                      step="0.1"
+                      value={localAgent.temperature}
+                      onChange={(e) => setLocalAgent(prev => ({
+                        ...prev,
+                        temperature: parseFloat(e.target.value)
+                      }))}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Top P
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={localAgent.top_p}
+                      onChange={(e) => setLocalAgent(prev => ({
+                        ...prev,
+                        top_p: parseFloat(e.target.value)
+                      }))}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Model
+                  </label>
+                  <select
+                    value={localAgent.model}
+                    onChange={(e) => setLocalAgent(prev => ({
+                      ...prev,
+                      model: e.target.value
+                    }))}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="gpt-4">GPT-4</option>
+                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                    <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+                    <option value="claude-3-haiku">Claude 3 Haiku</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Output Mode
+                  </label>
+                  <select
+                    value={localAgent.output_mode}
+                    onChange={(e) => setLocalAgent(prev => ({
+                      ...prev,
+                      output_mode: e.target.value
+                    }))}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="message">Message</option>
+                    <option value="api_payload">API Payload</option>
+                    <option value="internal_variable">Internal Variable</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Tools Tab */}
           {activeTab === 'tools' && (
             <div className="p-6">
@@ -891,13 +1017,6 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
           )}
 
           {/* Other tabs content would go here */}
-          {activeTab === 'prompt' && (
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Prompt Configuration</h3>
-              <p className="text-gray-600">Configure your agent's system prompt and behavior.</p>
-            </div>
-          )}
-
           {activeTab === 'triggers' && (
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Triggers</h3>
@@ -988,6 +1107,12 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
               // Refresh agent data
               window.location.reload();
             }}
+          />
+        )}
+        {showPromptWizard && (
+          <PromptEngineeringWizard
+            onClose={() => setShowPromptWizard(false)}
+            onSave={handleSavePrompt}
           />
         )}
       </AnimatePresence>

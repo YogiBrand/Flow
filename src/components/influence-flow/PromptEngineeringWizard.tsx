@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X, Save, Wand2, Brain, MessageSquare, Code, TrendingUp, CheckCircle as CircleCheck, DollarSign, Globe, Search, UploadCloud as CloudUpload, Lightbulb, Settings2, Plus, Minus, Copy, Play } from 'lucide-react';
 
 interface PromptEngineeringWizardProps {
   onClose: () => void;
   onSave: (promptData: any) => void;
+  initialPrompt?: string;
 }
 
-const PromptEngineeringWizard: React.FC<PromptEngineeringWizardProps> = ({ onClose, onSave }) => {
+const PromptEngineeringWizard: React.FC<PromptEngineeringWizardProps> = ({ onClose, onSave, initialPrompt }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(true);
   const [showModelAnalysis, setShowModelAnalysis] = useState(true);
@@ -51,6 +52,33 @@ const PromptEngineeringWizard: React.FC<PromptEngineeringWizardProps> = ({ onClo
     // File upload
     contextFile: null
   });
+
+  // Initialize with existing prompt if available
+  useEffect(() => {
+    if (initialPrompt) {
+      // Try to extract values from the existing prompt
+      // This is a simple implementation - in a real app, you'd want more robust parsing
+      setGeneratedPrompt(initialPrompt);
+      
+      // Extract core task
+      const coreTaskMatch = initialPrompt.match(/MISSION CRITICAL PROMPT: (.*?)(\n|$)/);
+      if (coreTaskMatch && coreTaskMatch[1]) {
+        setFormData(prev => ({ ...prev, coreTask: coreTaskMatch[1] }));
+      }
+      
+      // Extract AI persona
+      const personaMatch = initialPrompt.match(/You are a \*\*(.*?)\*\*/);
+      if (personaMatch && personaMatch[1]) {
+        setFormData(prev => ({ ...prev, aiPersona: personaMatch[1] }));
+      }
+      
+      // Extract output format
+      const outputFormatMatch = initialPrompt.match(/\*\*Output Format:\*\* (.*?)(\n|$)/);
+      if (outputFormatMatch && outputFormatMatch[1]) {
+        setFormData(prev => ({ ...prev, outputFormat: outputFormatMatch[1] }));
+      }
+    }
+  }, [initialPrompt]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -140,6 +168,13 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
       navigator.clipboard.writeText(generatedPrompt);
       // Could add a toast notification here
     }
+  };
+
+  const handleSavePrompt = () => {
+    onSave({ 
+      ...formData,
+      generatedPrompt: generatedPrompt 
+    });
   };
 
   const steps = [
@@ -483,7 +518,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
               <div>
                 <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                   <CircleCheck className="h-4 w-4" />
-                  Error Handling &amp; Safety
+                  Error Handling & Safety
                 </h4>
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
@@ -496,7 +531,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
                       className="h-4 w-4 text-purple-600 rounded"
                     />
                     <label htmlFor="enableEthicalGuardrails" className="text-sm text-gray-700 dark:text-gray-300">
-                      Ethical &amp; Safety Guardrails
+                      Ethical & Safety Guardrails
                     </label>
                   </div>
                   <div className="flex items-center gap-3">
@@ -740,7 +775,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
             
             {currentStep === steps.length - 1 ? (
               <button
-                onClick={() => onSave(formData)}
+                onClick={handleSavePrompt}
                 disabled={!generatedPrompt}
                 className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
