@@ -14,23 +14,33 @@ import {
   Play,
   X,
   Upload,
-  Globe,
-  Instagram,
-  Linkedin,
-  Twitter,
-  Youtube,
-  Facebook,
+  Link,
   FileText,
   Database,
-  Link,
+  Globe,
+  Users,
+  Hash,
+  Target,
+  Mail,
+  Share2,
+  Contact,
+  BarChart3,
+  TrendingUp,
+  Code,
+  FileBarChart,
   Check,
-  ChevronRight
+  ChevronRight,
+  ChevronDown,
+  Edit3,
+  Copy,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { useAgentData, useToolTemplates, useKnowledgeTemplates } from '../../hooks/useAgentData';
 import { AgentService } from '../../services/agentService';
-import { TemplateService } from '../../services/templateService';
-import { addKnowledgeItemToDB, addToolToDB, updateKnowledgeItemInDB, removeKnowledgeItemFromDB } from '../../lib/knowledge';
-import { useAuth } from '../../hooks/useAuth';
+import { addKnowledgeItemToDB, removeKnowledgeItemFromDB, updateKnowledgeItemInDB, addToolToDB, removeToolFromDB, updateToolInDB } from '../../lib/knowledge';
+import ToolConfigurationWizard from './ToolConfigurationWizard';
+import ToolsLibraryModal from './ToolsLibraryModal';
 
 interface AIAgentBuilderExactProps {
   agentId?: string;
@@ -39,47 +49,49 @@ interface AIAgentBuilderExactProps {
 
 // Separate component for text knowledge wizard
 const TextKnowledgeWizard: React.FC<{
-  onAddKnowledge: (data: any) => void;
+  onAddKnowledge: (title: string, content: string) => void;
   onCancel: () => void;
 }> = ({ onAddKnowledge, onCancel }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const wordCount = content.split(/\s+/).filter(word => word.length > 0).length;
+
+  const handleSubmit = () => {
+    if (title.trim() && content.trim()) {
+      onAddKnowledge(title.trim(), content.trim());
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <FileText className="w-8 h-8 text-blue-600" />
-        </div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Add Text Knowledge</h3>
-        <p className="text-gray-600">Enter text content to add to your agent's knowledge base</p>
-      </div>
-
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Title
+        </label>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           placeholder="Enter a title for this knowledge..."
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Content
+        </label>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[200px]"
           placeholder="Enter your text content here..."
-          rows={8}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
         />
-        <div className="text-xs text-gray-500 mt-1">{wordCount} words</div>
+        <div className="mt-2 text-sm text-gray-500">
+          {content.length} words
+        </div>
       </div>
 
-      <div className="flex justify-end space-x-3">
+      <div className="flex justify-end gap-3">
         <button
           onClick={onCancel}
           className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -87,18 +99,9 @@ const TextKnowledgeWizard: React.FC<{
           Cancel
         </button>
         <button
-          onClick={() => {
-            if (title.trim() && content.trim()) {
-              onAddKnowledge({
-                name: title,
-                type: 'text',
-                content: content,
-                metadata: { source: 'manual_text', wordCount }
-              });
-            }
-          }}
+          onClick={handleSubmit}
           disabled={!title.trim() || !content.trim()}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Add Knowledge
         </button>
@@ -108,58 +111,37 @@ const TextKnowledgeWizard: React.FC<{
 };
 
 const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBack }) => {
-  const { user } = useAuth();
   const { agent, loading } = useAgentData(agentId || '');
   const { templates: toolTemplates } = useToolTemplates();
   const { templates: knowledgeTemplates } = useKnowledgeTemplates();
   
   const [activeTab, setActiveTab] = useState<'prompt' | 'tools' | 'knowledge' | 'triggers' | 'escalations' | 'metadata' | 'variables'>('tools');
-  const [showToolsModal, setShowToolsModal] = useState(false);
-  const [showKnowledgeModal, setShowKnowledgeModal] = useState(false);
   const [testResults, setTestResults] = useState<any>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Knowledge wizard state
+  // Knowledge wizard states
+  const [showKnowledgeWizard, setShowKnowledgeWizard] = useState(false);
+  const [knowledgeWizardStep, setKnowledgeWizardStep] = useState(0);
   const [knowledgeWizardType, setKnowledgeWizardType] = useState<'existing' | 'url' | 'social' | 'text' | null>(null);
-  const [wizardStep, setWizardStep] = useState(1);
-  const [wizardData, setWizardData] = useState<any>({});
+  const [selectedKnowledgeBase, setSelectedKnowledgeBase] = useState<any>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<string>('');
+  const [urlImportType, setUrlImportType] = useState<'single' | 'batch'>('single');
 
-  // Local cache for knowledge items
-  const [knowledgeCache, setKnowledgeCache] = useState<any[]>([]);
+  // Tool states
+  const [showToolWizard, setShowToolWizard] = useState(false);
+  const [showToolsLibrary, setShowToolsLibrary] = useState(false);
+  const [selectedTool, setSelectedTool] = useState<any>(null);
+  const [expandedTools, setExpandedTools] = useState<Set<string>>(new Set());
+
+  // Local state for agent data
+  const [localAgent, setLocalAgent] = useState<any>(null);
 
   useEffect(() => {
-    if (agent?.knowledgeBases) {
-      setKnowledgeCache(agent.knowledgeBases);
+    if (agent) {
+      setLocalAgent(agent);
     }
-  }, [agent?.knowledgeBases]);
-
-  const handleSaveAgent = async () => {
-    if (!agent || !user) return;
-    
-    setSaving(true);
-    try {
-      await AgentService.updateAgent(agent.id, {
-        name: agent.name,
-        description: agent.description,
-        purpose: agent.purpose,
-        system_prompt: agent.system_prompt,
-        temperature: agent.temperature,
-        top_p: agent.top_p,
-        model: agent.model,
-        output_mode: agent.output_mode,
-        memory_enabled: agent.memory_enabled,
-        memory_type: agent.memory_type,
-        context_size: agent.context_size,
-        max_retries: agent.max_retries,
-        fallback_response: agent.fallback_response
-      });
-    } catch (error) {
-      console.error('Error saving agent:', error);
-    } finally {
-      setSaving(false);
-    }
-  };
+  }, [agent]);
 
   const handleTestAgent = async () => {
     setIsTesting(true);
@@ -170,650 +152,134 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
         output: {
           message: 'Agent executed successfully',
           response: 'Hello! I am your AI assistant. How can I help you today?',
-          toolsUsed: agent?.tools?.filter(t => t.enabled).length || 0
+          toolsUsed: localAgent?.tools?.filter((t: any) => t.enabled).length || 0
         }
       });
       setIsTesting(false);
     }, 2000);
   };
 
-  const addToolToAgent = async (templateId: string) => {
-    if (!agentId) return;
+  const handleSave = async () => {
+    if (!localAgent || !agentId) return;
     
+    setSaving(true);
     try {
-      await addToolToDB(agentId, templateId);
-      setShowToolsModal(false);
+      await AgentService.updateAgent(agentId, {
+        name: localAgent.name,
+        description: localAgent.description,
+        purpose: localAgent.purpose,
+        system_prompt: localAgent.system_prompt,
+        temperature: localAgent.temperature,
+        top_p: localAgent.top_p,
+        model: localAgent.model,
+        output_mode: localAgent.output_mode,
+        memory_enabled: localAgent.memory_enabled,
+        memory_type: localAgent.memory_type,
+        context_size: localAgent.context_size,
+        max_retries: localAgent.max_retries,
+        fallback_response: localAgent.fallback_response
+      });
     } catch (error) {
-      console.error('Error adding tool:', error);
+      console.error('Error saving agent:', error);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const removeToolFromAgent = async (toolId: string) => {
-    try {
-      // Remove from database
-      const { error } = await AgentService.deleteTool(toolId);
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error removing tool:', error);
-    }
-  };
-
-  const addKnowledgeToAgent = async (knowledgeData: any) => {
+  const handleAddKnowledge = async (title: string, content: string) => {
     if (!agentId) return;
-    
+
     try {
-      const { data, error } = await addKnowledgeItemToDB(agentId, knowledgeData);
-      if (error) throw error;
-      
-      // Update local cache immediately
-      if (data) {
-        setKnowledgeCache(prev => [...prev, data]);
+      const newKnowledge = await addKnowledgeItemToDB(agentId, {
+        name: title,
+        type: 'text',
+        content: content,
+        metadata: { source: 'manual' },
+        enabled: true
+      });
+
+      if (newKnowledge.data) {
+        setLocalAgent((prev: any) => ({
+          ...prev,
+          knowledgeBases: [...(prev?.knowledgeBases || []), newKnowledge.data]
+        }));
       }
-      
-      // Close wizard
-      setShowKnowledgeModal(false);
+
+      setShowKnowledgeWizard(false);
+      setKnowledgeWizardStep(0);
       setKnowledgeWizardType(null);
-      setWizardStep(1);
-      setWizardData({});
     } catch (error) {
       console.error('Error adding knowledge:', error);
     }
   };
 
-  const removeKnowledgeFromAgent = async (knowledgeId: string) => {
+  const handleRemoveKnowledge = async (knowledgeId: string) => {
     try {
-      const { error } = await removeKnowledgeItemFromDB(knowledgeId);
-      if (error) throw error;
-      
-      // Update local cache immediately
-      setKnowledgeCache(prev => prev.filter(item => item.id !== knowledgeId));
+      await removeKnowledgeItemFromDB(knowledgeId);
+      setLocalAgent((prev: any) => ({
+        ...prev,
+        knowledgeBases: prev?.knowledgeBases?.filter((kb: any) => kb.id !== knowledgeId) || []
+      }));
     } catch (error) {
       console.error('Error removing knowledge:', error);
     }
   };
 
-  const getWizardSteps = () => {
-    switch (knowledgeWizardType) {
-      case 'existing':
-        return [
-          { number: 1, label: 'Select Knowledge Base', active: wizardStep === 1 },
-          { number: 2, label: 'Choose Resources', active: wizardStep === 2 },
-          { number: 3, label: 'Review & Add', active: wizardStep === 3 }
-        ];
-      case 'url':
-        return [
-          { number: 1, label: 'Import Type', active: wizardStep === 1 },
-          { number: 2, label: 'Add URLs', active: wizardStep === 2 },
-          { number: 3, label: 'Review & Import', active: wizardStep === 3 }
-        ];
-      case 'social':
-        return [
-          { number: 1, label: 'Select Platform', active: wizardStep === 1 },
-          { number: 2, label: 'Choose Account', active: wizardStep === 2 },
-          { number: 3, label: 'Select Content', active: wizardStep === 3 },
-          { number: 4, label: 'Content Parts', active: wizardStep === 4 },
-          { number: 5, label: 'Review & Import', active: wizardStep === 5 }
-        ];
-      case 'text':
-        return [
-          { number: 1, label: 'Add Text Knowledge', active: wizardStep === 1 }
-        ];
-      default:
-        return [];
+  const handleAddTool = async (template: any) => {
+    if (!agentId) return;
+
+    try {
+      const newTool = await addToolToDB(agentId, template.id);
+      if (newTool.data) {
+        setLocalAgent((prev: any) => ({
+          ...prev,
+          tools: [...(prev?.tools || []), { ...newTool.data, template }]
+        }));
+      }
+      setShowToolsLibrary(false);
+    } catch (error) {
+      console.error('Error adding tool:', error);
     }
   };
 
-  const renderWizardProgress = () => {
-    const steps = getWizardSteps();
-    
-    return (
-      <div className="flex items-center justify-center space-x-2 mb-8">
-        {steps.map((step, index) => (
-          <React.Fragment key={step.number}>
-            <div className="flex flex-col items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
-                step.number < wizardStep 
-                  ? 'bg-green-500 text-white' 
-                  : step.active 
-                    ? 'bg-blue-500 text-white' 
-                    : 'bg-gray-200 text-gray-600'
-              }`}>
-                {step.number < wizardStep ? <Check className="w-4 h-4" /> : step.number}
-              </div>
-              <span className={`text-xs mt-1 text-center max-w-20 ${
-                step.active ? 'text-blue-600 font-medium' : 'text-gray-500'
-              }`}>
-                {step.label}
-              </span>
-            </div>
-            {index < steps.length - 1 && (
-              <div className={`w-8 h-0.5 ${
-                step.number < wizardStep ? 'bg-green-500' : 'bg-gray-200'
-              }`} />
-            )}
-          </React.Fragment>
-        ))}
-      </div>
-    );
-  };
-
-  const renderExistingKnowledgeWizard = () => {
-    switch (wizardStep) {
-      case 1:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Database className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Knowledge Base</h3>
-              <p className="text-gray-600">Choose a knowledge base to import resources from</p>
-            </div>
-
-            <div className="space-y-3">
-              {knowledgeTemplates.map((template) => (
-                <label key={template.id} className="flex items-start p-4 border border-gray-200 rounded-lg hover:border-blue-300 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="knowledgeBase"
-                    value={template.id}
-                    checked={wizardData.selectedTemplate === template.id}
-                    onChange={(e) => setWizardData(prev => ({ ...prev, selectedTemplate: e.target.value }))}
-                    className="mt-1 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div className="ml-3 flex-1">
-                    <div className="font-medium text-gray-900">{template.name}</div>
-                    <div className="text-sm text-gray-600">{template.description}</div>
-                    <div className="text-xs text-gray-500 mt-1">{template.category} • {template.tags?.length || 0} resources</div>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 2:
-        const selectedTemplate = knowledgeTemplates.find(t => t.id === wizardData.selectedTemplate);
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Choose Resources</h3>
-              <p className="text-gray-600">Select which resources to import from {selectedTemplate?.name}</p>
-            </div>
-
-            <div className="space-y-3">
-              {selectedTemplate?.tags?.map((tag, index) => (
-                <label key={index} className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-blue-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={wizardData.selectedResources?.includes(tag) || false}
-                    onChange={(e) => {
-                      const resources = wizardData.selectedResources || [];
-                      if (e.target.checked) {
-                        setWizardData(prev => ({ ...prev, selectedResources: [...resources, tag] }));
-                      } else {
-                        setWizardData(prev => ({ ...prev, selectedResources: resources.filter(r => r !== tag) }));
-                      }
-                    }}
-                    className="text-blue-600 focus:ring-blue-500"
-                  />
-                  <div className="ml-3">
-                    <div className="font-medium text-gray-900 capitalize">{tag.replace('_', ' ')}</div>
-                    <div className="text-sm text-gray-600">Resource related to {tag}</div>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Check className="w-8 h-8 text-green-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Review & Add</h3>
-              <p className="text-gray-600">Review your selections before adding to the knowledge base</p>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">Selected Knowledge Base:</h4>
-              <p className="text-gray-700">{knowledgeTemplates.find(t => t.id === wizardData.selectedTemplate)?.name}</p>
-              
-              <h4 className="font-medium text-gray-900 mt-4 mb-2">Selected Resources:</h4>
-              <ul className="text-gray-700 space-y-1">
-                {wizardData.selectedResources?.map((resource: string, index: number) => (
-                  <li key={index} className="capitalize">• {resource.replace('_', ' ')}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
+  const handleRemoveTool = async (toolId: string) => {
+    try {
+      await removeToolFromDB(toolId);
+      setLocalAgent((prev: any) => ({
+        ...prev,
+        tools: prev?.tools?.filter((tool: any) => tool.id !== toolId) || []
+      }));
+    } catch (error) {
+      console.error('Error removing tool:', error);
     }
   };
 
-  const renderUrlImportWizard = () => {
-    switch (wizardStep) {
-      case 1:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Link className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Import URLs</h3>
-              <p className="text-gray-600">Choose how you want to import URLs to your knowledge base</p>
-            </div>
-
-            <div className="space-y-3">
-              <label className="flex items-start p-4 border border-gray-200 rounded-lg hover:border-blue-300 cursor-pointer">
-                <input
-                  type="radio"
-                  name="importType"
-                  value="single"
-                  checked={wizardData.importType === 'single'}
-                  onChange={(e) => setWizardData(prev => ({ ...prev, importType: e.target.value }))}
-                  className="mt-1 text-blue-600 focus:ring-blue-500"
-                />
-                <div className="ml-3">
-                  <div className="font-medium text-gray-900">Single URL</div>
-                  <div className="text-sm text-gray-600">Import one URL at a time</div>
-                </div>
-              </label>
-
-              <label className="flex items-start p-4 border border-gray-200 rounded-lg hover:border-blue-300 cursor-pointer">
-                <input
-                  type="radio"
-                  name="importType"
-                  value="batch"
-                  checked={wizardData.importType === 'batch'}
-                  onChange={(e) => setWizardData(prev => ({ ...prev, importType: e.target.value }))}
-                  className="mt-1 text-blue-600 focus:ring-blue-500"
-                />
-                <div className="ml-3">
-                  <div className="font-medium text-gray-900">Batch Import</div>
-                  <div className="text-sm text-gray-600">Import multiple URLs at once</div>
-                </div>
-              </label>
-            </div>
-          </div>
-        );
-
-      case 2:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Globe className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Add URLs</h3>
-              <p className="text-gray-600">
-                {wizardData.importType === 'single' ? 'Enter the URL to import' : 'Enter multiple URLs (one per line)'}
-              </p>
-            </div>
-
-            {wizardData.importType === 'single' ? (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">URL</label>
-                <input
-                  type="url"
-                  value={wizardData.url || ''}
-                  onChange={(e) => setWizardData(prev => ({ ...prev, url: e.target.value }))}
-                  placeholder="https://example.com"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">URLs (one per line)</label>
-                <textarea
-                  value={wizardData.urls || ''}
-                  onChange={(e) => setWizardData(prev => ({ ...prev, urls: e.target.value }))}
-                  placeholder="https://example1.com&#10;https://example2.com&#10;https://example3.com"
-                  rows={6}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            )}
-          </div>
-        );
-
-      case 3:
-        const urls = wizardData.importType === 'single' 
-          ? [wizardData.url].filter(Boolean)
-          : (wizardData.urls || '').split('\n').filter(url => url.trim());
-
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Check className="w-8 h-8 text-green-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Review & Import</h3>
-              <p className="text-gray-600">Review the URLs before importing</p>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">URLs to Import ({urls.length}):</h4>
-              <ul className="text-gray-700 space-y-1 max-h-40 overflow-y-auto">
-                {urls.map((url, index) => (
-                  <li key={index} className="text-sm">• {url}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  const renderSocialMediaWizard = () => {
-    const platforms = [
-      { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'text-pink-600' },
-      { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: 'text-blue-600' },
-      { id: 'twitter', name: 'Twitter', icon: Twitter, color: 'text-blue-400' },
-      { id: 'youtube', name: 'YouTube', icon: Youtube, color: 'text-red-600' },
-      { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'text-blue-700' }
-    ];
-
-    const contentTypes = [
-      { id: 'posts', name: 'Posts', description: 'Regular posts and updates' },
-      { id: 'stories', name: 'Stories', description: 'Story content and highlights' },
-      { id: 'comments', name: 'Comments', description: 'Comments and interactions' },
-      { id: 'bio', name: 'Bio & Profile', description: 'Profile information and bio' }
-    ];
-
-    const contentParts = [
-      { id: 'text', name: 'Text Content', description: 'Captions and text content' },
-      { id: 'hashtags', name: 'Hashtags', description: 'Hashtags and tags' },
-      { id: 'mentions', name: 'Mentions', description: 'User mentions and tags' },
-      { id: 'metadata', name: 'Metadata', description: 'Post metadata and analytics' }
-    ];
-
-    switch (wizardStep) {
-      case 1:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Globe className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Platform</h3>
-              <p className="text-gray-600">Choose the social media platform to import content from</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {platforms.map((platform) => (
-                <button
-                  key={platform.id}
-                  onClick={() => setWizardData(prev => ({ ...prev, platform: platform.id }))}
-                  className={`flex items-center p-4 border rounded-lg hover:border-blue-300 transition-colors ${
-                    wizardData.platform === platform.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                  }`}
-                >
-                  <platform.icon className={`w-6 h-6 ${platform.color} mr-3`} />
-                  <span className="font-medium text-gray-900">{platform.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 2:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Bot className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Choose Account</h3>
-              <p className="text-gray-600">Enter the account username or handle</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {wizardData.platform === 'twitter' ? 'Twitter Handle' : 'Username'}
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">@</span>
-                <input
-                  type="text"
-                  value={wizardData.username || ''}
-                  onChange={(e) => setWizardData(prev => ({ ...prev, username: e.target.value }))}
-                  placeholder="username"
-                  className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Content</h3>
-              <p className="text-gray-600">Choose what type of content to import</p>
-            </div>
-
-            <div className="space-y-3">
-              {contentTypes.map((type) => (
-                <label key={type.id} className="flex items-start p-3 border border-gray-200 rounded-lg hover:border-blue-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={wizardData.contentTypes?.includes(type.id) || false}
-                    onChange={(e) => {
-                      const types = wizardData.contentTypes || [];
-                      if (e.target.checked) {
-                        setWizardData(prev => ({ ...prev, contentTypes: [...types, type.id] }));
-                      } else {
-                        setWizardData(prev => ({ ...prev, contentTypes: types.filter(t => t !== type.id) }));
-                      }
-                    }}
-                    className="mt-1 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div className="ml-3">
-                    <div className="font-medium text-gray-900">{type.name}</div>
-                    <div className="text-sm text-gray-600">{type.description}</div>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Settings className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Content Parts</h3>
-              <p className="text-gray-600">Select which parts of the content to extract</p>
-            </div>
-
-            <div className="space-y-3">
-              {contentParts.map((part) => (
-                <label key={part.id} className="flex items-start p-3 border border-gray-200 rounded-lg hover:border-blue-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={wizardData.contentParts?.includes(part.id) || false}
-                    onChange={(e) => {
-                      const parts = wizardData.contentParts || [];
-                      if (e.target.checked) {
-                        setWizardData(prev => ({ ...prev, contentParts: [...parts, part.id] }));
-                      } else {
-                        setWizardData(prev => ({ ...prev, contentParts: parts.filter(p => p !== part.id) }));
-                      }
-                    }}
-                    className="mt-1 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div className="ml-3">
-                    <div className="font-medium text-gray-900">{part.name}</div>
-                    <div className="text-sm text-gray-600">{part.description}</div>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 5:
-        const selectedPlatform = platforms.find(p => p.id === wizardData.platform);
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Check className="w-8 h-8 text-green-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Review & Import</h3>
-              <p className="text-gray-600">Review your selections before importing</p>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-              <div>
-                <h4 className="font-medium text-gray-900">Platform:</h4>
-                <p className="text-gray-700">{selectedPlatform?.name}</p>
-              </div>
-              
-              <div>
-                <h4 className="font-medium text-gray-900">Account:</h4>
-                <p className="text-gray-700">@{wizardData.username}</p>
-              </div>
-              
-              <div>
-                <h4 className="font-medium text-gray-900">Content Types:</h4>
-                <ul className="text-gray-700">
-                  {wizardData.contentTypes?.map((type: string) => (
-                    <li key={type} className="capitalize">• {type}</li>
-                  ))}
-                </ul>
-              </div>
-              
-              <div>
-                <h4 className="font-medium text-gray-900">Content Parts:</h4>
-                <ul className="text-gray-700">
-                  {wizardData.contentParts?.map((part: string) => (
-                    <li key={part} className="capitalize">• {part.replace('_', ' ')}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
+  const toggleToolExpansion = (toolId: string) => {
+    setExpandedTools(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(toolId)) {
+        newSet.delete(toolId);
+      } else {
+        newSet.add(toolId);
+      }
+      return newSet;
+    });
   };
 
   const renderKnowledgeWizard = () => {
-    if (!knowledgeWizardType) return null;
+    const wizardSteps = [
+      { id: 'select_base', title: 'Select Knowledge Base', icon: Database },
+      { id: 'choose_resources', title: 'Choose Resources', icon: FileText },
+      { id: 'review_add', title: 'Review & Add', icon: Check }
+    ];
 
-    const canProceed = () => {
-      switch (knowledgeWizardType) {
-        case 'existing':
-          if (wizardStep === 1) return wizardData.selectedTemplate;
-          if (wizardStep === 2) return wizardData.selectedResources?.length > 0;
-          return true;
-        case 'url':
-          if (wizardStep === 1) return wizardData.importType;
-          if (wizardStep === 2) {
-            return wizardData.importType === 'single' 
-              ? wizardData.url?.trim()
-              : wizardData.urls?.trim();
-          }
-          return true;
-        case 'social':
-          if (wizardStep === 1) return wizardData.platform;
-          if (wizardStep === 2) return wizardData.username?.trim();
-          if (wizardStep === 3) return wizardData.contentTypes?.length > 0;
-          if (wizardStep === 4) return wizardData.contentParts?.length > 0;
-          return true;
-        case 'text':
-          return true;
-        default:
-          return false;
-      }
-    };
-
-    const handleNext = () => {
-      const maxSteps = getWizardSteps().length;
-      if (wizardStep < maxSteps) {
-        setWizardStep(prev => prev + 1);
-      }
-    };
-
-    const handlePrevious = () => {
-      if (wizardStep > 1) {
-        setWizardStep(prev => prev - 1);
-      }
-    };
-
-    const handleFinish = () => {
-      let knowledgeData: any = {};
-
-      switch (knowledgeWizardType) {
-        case 'existing':
-          const template = knowledgeTemplates.find(t => t.id === wizardData.selectedTemplate);
-          knowledgeData = {
-            name: `${template?.name} - Selected Resources`,
-            type: 'document',
-            content: template?.content || '',
-            metadata: {
-              source: 'existing_knowledge',
-              templateId: wizardData.selectedTemplate,
-              selectedResources: wizardData.selectedResources
-            }
-          };
-          break;
-        case 'url':
-          const urls = wizardData.importType === 'single' 
-            ? [wizardData.url].filter(Boolean)
-            : (wizardData.urls || '').split('\n').filter(url => url.trim());
-          knowledgeData = {
-            name: `URL Import - ${urls.length} URLs`,
-            type: 'url',
-            content: urls.join('\n'),
-            metadata: {
-              source: 'url_import',
-              importType: wizardData.importType,
-              urlCount: urls.length
-            }
-          };
-          break;
-        case 'social':
-          knowledgeData = {
-            name: `${wizardData.platform} - @${wizardData.username}`,
-            type: 'document',
-            content: `Social media content from @${wizardData.username} on ${wizardData.platform}`,
-            metadata: {
-              source: 'social_media',
-              platform: wizardData.platform,
-              username: wizardData.username,
-              contentTypes: wizardData.contentTypes,
-              contentParts: wizardData.contentParts
-            }
-          };
-          break;
-      }
-
-      addKnowledgeToAgent(knowledgeData);
-    };
+    const platforms = [
+      { id: 'instagram', name: 'Instagram', icon: '📷' },
+      { id: 'linkedin', name: 'LinkedIn', icon: '💼' },
+      { id: 'twitter', name: 'Twitter', icon: '🐦' },
+      { id: 'youtube', name: 'YouTube', icon: '📺' },
+      { id: 'facebook', name: 'Facebook', icon: '📘' }
+    ];
 
     return (
       <motion.div
@@ -821,110 +287,270 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            setShowKnowledgeModal(false);
-            setKnowledgeWizardType(null);
-            setWizardStep(1);
-            setWizardData({});
-          }
-        }}
+        onClick={() => setShowKnowledgeWizard(false)}
       >
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col"
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => {
+                  if (knowledgeWizardStep > 0) {
+                    setKnowledgeWizardStep(knowledgeWizardStep - 1);
+                  } else {
+                    setShowKnowledgeWizard(false);
+                  }
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Add Knowledge</h2>
+                <p className="text-sm text-gray-600">{wizardSteps[knowledgeWizardStep]?.title}</p>
+              </div>
+            </div>
             <button
-              onClick={() => {
-                if (wizardStep > 1) {
-                  handlePrevious();
-                } else {
-                  setShowKnowledgeModal(false);
-                  setKnowledgeWizardType(null);
-                  setWizardStep(1);
-                  setWizardData({});
-                }
-              }}
-              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+              onClick={() => setShowKnowledgeWizard(false)}
+              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Back
-            </button>
-            <button
-              onClick={() => {
-                setShowKnowledgeModal(false);
-                setKnowledgeWizardType(null);
-                setWizardStep(1);
-                setWizardData({});
-              }}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Progress */}
-          {knowledgeWizardType !== 'text' && (
-            <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
-              {renderWizardProgress()}
+          {/* Progress Steps */}
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between max-w-md mx-auto">
+              {wizardSteps.map((step, index) => (
+                <div key={step.id} className="flex items-center">
+                  <div className={`flex items-center gap-2 ${index <= knowledgeWizardStep ? 'text-indigo-600' : 'text-gray-400'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
+                      index < knowledgeWizardStep 
+                        ? 'bg-indigo-600 border-indigo-600 text-white' 
+                        : index === knowledgeWizardStep 
+                          ? 'border-indigo-600 text-indigo-600 bg-white' 
+                          : 'border-gray-300 text-gray-400 bg-white'
+                    }`}>
+                      {index < knowledgeWizardStep ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <step.icon className="w-4 h-4" />
+                      )}
+                    </div>
+                    <span className="text-sm font-medium hidden sm:block">{step.title}</span>
+                  </div>
+                  {index < wizardSteps.length - 1 && (
+                    <div className={`w-12 h-0.5 mx-4 transition-colors ${
+                      index < knowledgeWizardStep ? 'bg-indigo-600' : 'bg-gray-300'
+                    }`} />
+                  )}
+                </div>
+              ))}
             </div>
-          )}
+          </div>
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-6">
-            {knowledgeWizardType === 'existing' && renderExistingKnowledgeWizard()}
-            {knowledgeWizardType === 'url' && renderUrlImportWizard()}
-            {knowledgeWizardType === 'social' && renderSocialMediaWizard()}
-            {knowledgeWizardType === 'text' && (
-              <TextKnowledgeWizard
-                onAddKnowledge={addKnowledgeToAgent}
-                onCancel={() => {
-                  setShowKnowledgeModal(false);
-                  setKnowledgeWizardType(null);
-                }}
-              />
+            {/* Step 0: Knowledge Base Selection */}
+            {knowledgeWizardStep === 0 && !knowledgeWizardType && (
+              <div className="max-w-2xl mx-auto">
+                <div className="text-center mb-8">
+                  <Database className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Knowledge Base</h3>
+                  <p className="text-gray-600">Choose a knowledge base to import resources from</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {knowledgeTemplates.slice(0, 3).map((template) => (
+                    <button
+                      key={template.id}
+                      onClick={() => {
+                        setSelectedKnowledgeBase(template);
+                        setKnowledgeWizardType('existing');
+                        setKnowledgeWizardStep(1);
+                      }}
+                      className="p-6 border-2 border-gray-200 rounded-xl hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center group"
+                    >
+                      <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:bg-indigo-200 transition-colors">
+                        <Database className="w-6 h-6 text-indigo-600" />
+                      </div>
+                      <h4 className="font-medium text-gray-900 mb-2">{template.name}</h4>
+                      <p className="text-sm text-gray-600">{template.description}</p>
+                      <div className="mt-3 text-xs text-gray-500">
+                        {Math.floor(Math.random() * 50) + 10} resources
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-8 text-center">
+                  <div className="text-sm text-gray-500 mb-4">or</div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <button
+                      onClick={() => {
+                        setKnowledgeWizardType('existing');
+                        setKnowledgeWizardStep(1);
+                      }}
+                      className="p-4 border border-gray-300 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center"
+                    >
+                      <Database className="w-6 h-6 text-gray-600 mx-auto mb-2" />
+                      <span className="text-sm font-medium text-gray-900">Add existing knowledge</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setKnowledgeWizardType('url');
+                        setKnowledgeWizardStep(1);
+                      }}
+                      className="p-4 border border-gray-300 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center"
+                    >
+                      <Globe className="w-6 h-6 text-gray-600 mx-auto mb-2" />
+                      <span className="text-sm font-medium text-gray-900">Import URL</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setKnowledgeWizardType('social');
+                        setKnowledgeWizardStep(1);
+                      }}
+                      className="p-4 border border-gray-300 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center"
+                    >
+                      <Users className="w-6 h-6 text-gray-600 mx-auto mb-2" />
+                      <span className="text-sm font-medium text-gray-900">Import Social Media Content</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setKnowledgeWizardType('text');
+                        setKnowledgeWizardStep(1);
+                      }}
+                      className="p-4 border border-gray-300 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center"
+                    >
+                      <FileText className="w-6 h-6 text-gray-600 mx-auto mb-2" />
+                      <span className="text-sm font-medium text-gray-900">Text</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 1: Platform Selection for Social Media */}
+            {knowledgeWizardStep === 1 && knowledgeWizardType === 'social' && (
+              <div className="max-w-2xl mx-auto">
+                <div className="text-center mb-8">
+                  <Users className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Platform</h3>
+                  <p className="text-gray-600">Choose the social media platform to import content from</p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {platforms.map((platform) => (
+                    <button
+                      key={platform.id}
+                      onClick={() => {
+                        setSelectedPlatform(platform.id);
+                        setKnowledgeWizardStep(2);
+                      }}
+                      className="p-6 border-2 border-gray-200 rounded-xl hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center group"
+                    >
+                      <div className="text-4xl mb-3">{platform.icon}</div>
+                      <h4 className="font-medium text-gray-900">{platform.name}</h4>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Step 1: URL Import Type */}
+            {knowledgeWizardStep === 1 && knowledgeWizardType === 'url' && (
+              <div className="max-w-2xl mx-auto">
+                <div className="text-center mb-8">
+                  <Globe className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Import URLs</h3>
+                  <p className="text-gray-600">Choose how you want to import URLs to your knowledge base</p>
+                </div>
+
+                <div className="space-y-4">
+                  <button
+                    onClick={() => {
+                      setUrlImportType('single');
+                      setKnowledgeWizardStep(2);
+                    }}
+                    className={`w-full p-6 border-2 rounded-xl text-left transition-all ${
+                      urlImportType === 'single' 
+                        ? 'border-indigo-300 bg-indigo-50' 
+                        : 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                        <Link className="w-6 h-6 text-indigo-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-1">Single URL</h4>
+                        <p className="text-sm text-gray-600">Import one URL at a time</p>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setUrlImportType('batch');
+                      setKnowledgeWizardStep(2);
+                    }}
+                    className={`w-full p-6 border-2 rounded-xl text-left transition-all ${
+                      urlImportType === 'batch' 
+                        ? 'border-indigo-300 bg-indigo-50' 
+                        : 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                        <Database className="w-6 h-6 text-indigo-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-1">Batch Import</h4>
+                        <p className="text-sm text-gray-600">Import multiple URLs at once</p>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 1: Text Knowledge */}
+            {knowledgeWizardStep === 1 && knowledgeWizardType === 'text' && (
+              <div className="max-w-2xl mx-auto">
+                <div className="text-center mb-8">
+                  <FileText className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Add Text Knowledge</h3>
+                  <p className="text-gray-600">Add custom text content to your agent's knowledge base</p>
+                </div>
+
+                <TextKnowledgeWizard
+                  onAddKnowledge={handleAddKnowledge}
+                  onCancel={() => setShowKnowledgeWizard(false)}
+                />
+              </div>
             )}
           </div>
-
-          {/* Footer */}
-          {knowledgeWizardType !== 'text' && (
-            <div className="flex justify-between items-center p-6 border-t border-gray-200 flex-shrink-0">
-              <button
-                onClick={handlePrevious}
-                disabled={wizardStep === 1}
-                className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              
-              {wizardStep === getWizardSteps().length ? (
-                <button
-                  onClick={handleFinish}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Add Knowledge
-                </button>
-              ) : (
-                <button
-                  onClick={handleNext}
-                  disabled={!canProceed()}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                >
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </button>
-              )}
-            </div>
-          )}
         </motion.div>
       </motion.div>
     );
   };
+
+  const tabs = [
+    { id: 'prompt', label: 'Prompt', icon: MessageSquare },
+    { id: 'tools', label: 'Tools', icon: Zap },
+    { id: 'knowledge', label: 'Knowledge', icon: Brain },
+    { id: 'triggers', label: 'Triggers', icon: Play },
+    { id: 'escalations', label: 'Escalations', icon: Settings },
+    { id: 'metadata', label: 'Metadata', icon: Database },
+    { id: 'variables', label: 'Variables', icon: Code }
+  ];
 
   if (loading) {
     return (
@@ -937,13 +563,13 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
     );
   }
 
-  if (!agent) {
+  if (!localAgent) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Bot className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Agent not found</h2>
-          <p className="text-gray-600 mb-4">The agent you're looking for doesn't exist.</p>
+          <Bot className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Agent not found</h3>
+          <p className="text-gray-600 mb-6">The agent you're looking for doesn't exist or has been deleted.</p>
           <button
             onClick={onBack}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
@@ -954,16 +580,6 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
       </div>
     );
   }
-
-  const tabs = [
-    { id: 'prompt', label: 'Prompt', icon: MessageSquare },
-    { id: 'tools', label: 'Tools', icon: Zap },
-    { id: 'knowledge', label: 'Knowledge', icon: Brain },
-    { id: 'triggers', label: 'Triggers', icon: Play },
-    { id: 'escalations', label: 'Escalations', icon: TestTube },
-    { id: 'metadata', label: 'Metadata', icon: Settings },
-    { id: 'variables', label: 'Variables', icon: Database }
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -979,7 +595,9 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
               <span className="text-sm">Back to Agents</span>
             </button>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">{agent.name}</h1>
+              <h1 className="text-xl font-semibold text-gray-900">
+                {localAgent.name}
+              </h1>
               <p className="text-sm text-gray-600">AI Agent Configuration</p>
             </div>
           </div>
@@ -1003,7 +621,7 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
               )}
             </button>
             <button
-              onClick={handleSaveAgent}
+              onClick={handleSave}
               disabled={saving}
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-50"
             >
@@ -1023,7 +641,7 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6">
         {/* Navigation Tabs */}
         <div className="border-b border-gray-200 mb-6">
           <nav className="flex space-x-8">
@@ -1045,239 +663,296 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
         </div>
 
         {/* Tab Content */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          {activeTab === 'knowledge' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Knowledge</h2>
-                  <p className="text-gray-600">Import data to teach your agents about new topics.</p>
-                </div>
-                <button
-                  onClick={() => setShowKnowledgeModal(true)}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Knowledge
-                </button>
-              </div>
-
-              {/* Upload Knowledge Section */}
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8">
-                <div className="text-center">
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Upload knowledge</h3>
-                  <p className="text-gray-600 mb-6">
-                    Drag & drop or <button className="text-indigo-600 hover:text-indigo-700">choose files</button> to upload.
-                  </p>
-                  <p className="text-sm text-gray-500 mb-6">
-                    Supported formats: .csv, .json, .pdf, .xlsx, .xls, .txt, .md, .docx, .pptx.<br />
-                    Max 5 files per upload.
-                  </p>
-                  
-                  <div className="text-center text-gray-500 mb-6">or</div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <button
-                      onClick={() => {
-                        setKnowledgeWizardType('existing');
-                        setShowKnowledgeModal(true);
-                      }}
-                      className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
-                    >
-                      <Database className="w-8 h-8 text-gray-600 mb-2" />
-                      <span className="text-sm font-medium text-gray-900">Add existing knowledge</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        setKnowledgeWizardType('url');
-                        setShowKnowledgeModal(true);
-                      }}
-                      className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
-                    >
-                      <Globe className="w-8 h-8 text-gray-600 mb-2" />
-                      <span className="text-sm font-medium text-gray-900">Import URL</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        setKnowledgeWizardType('social');
-                        setShowKnowledgeModal(true);
-                      }}
-                      className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
-                    >
-                      <Instagram className="w-8 h-8 text-gray-600 mb-2" />
-                      <span className="text-sm font-medium text-gray-900">Import Social Media Content</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        setKnowledgeWizardType('text');
-                        setShowKnowledgeModal(true);
-                      }}
-                      className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
-                    >
-                      <FileText className="w-8 h-8 text-gray-600 mb-2" />
-                      <span className="text-sm font-medium text-gray-900">Text</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Knowledge Items */}
-              {knowledgeCache.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-gray-900">Knowledge Items</h3>
-                  <div className="space-y-3">
-                    {knowledgeCache.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <FileText className="w-5 h-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-gray-900">{item.name}</h4>
-                            <p className="text-sm text-gray-600">{item.type} • {item.metadata?.source || 'Unknown source'}</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => removeKnowledgeFromAgent(item.id)}
-                          className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
+        <div className="bg-white rounded-xl border border-gray-200">
+          {/* Tools Tab */}
           {activeTab === 'tools' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Tools</h2>
-                  <p className="text-gray-600">Automate your marketing workflows with intelligent lead processing and engagement.</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Tools</h3>
+                  <p className="text-gray-600">Used by agents to complete tasks</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={handleTestAgent}
                     disabled={isTesting}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
+                    className="px-4 py-2 text-indigo-600 border border-indigo-300 rounded-lg hover:bg-indigo-50 transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-50"
                   >
-                    {isTesting ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Running...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-4 h-4" />
-                        Run
-                      </>
-                    )}
+                    <Play className="w-4 h-4" />
+                    Run tool
                   </button>
-                  <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center gap-2">
-                    <Settings className="w-4 h-4" />
-                    Build
+                  <button
+                    onClick={() => setShowToolsLibrary(true)}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    New tool
                   </button>
                 </div>
               </div>
 
-              {/* Tools Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {agent.tools?.map((tool) => (
-                  <div key={tool.id} className="border border-gray-200 rounded-lg p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                          tool.enabled ? 'bg-blue-100' : 'bg-gray-100'
-                        }`}>
-                          {tool.icon ? <tool.icon className={`w-6 h-6 ${tool.enabled ? 'text-blue-600' : 'text-gray-400'}`} /> : <Zap className={`w-6 h-6 ${tool.enabled ? 'text-blue-600' : 'text-gray-400'}`} />}
+              {/* Tools List */}
+              {localAgent.tools && localAgent.tools.length > 0 ? (
+                <div className="space-y-4">
+                  {localAgent.tools.map((tool: any) => (
+                    <div key={tool.id} className="border border-gray-200 rounded-lg">
+                      <div className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                              {tool.icon ? (
+                                <tool.icon className="w-5 h-5 text-purple-600" />
+                              ) : (
+                                <Zap className="w-5 h-5 text-purple-600" />
+                              )}
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900">{tool.name}</h4>
+                              <p className="text-sm text-gray-600">{tool.type?.replace('_', ' ')}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => toggleToolExpansion(tool.id)}
+                              className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                            >
+                              {expandedTools.has(tool.id) ? (
+                                <ChevronDown className="w-4 h-4" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedTool(tool);
+                                setShowToolWizard(true);
+                              }}
+                              className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                            >
+                              <Settings className="w-4 h-4" />
+                            </button>
+                            <button className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
+                              <Play className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleRemoveTool(tool.id)}
+                              className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{tool.name}</h3>
-                          <p className="text-sm text-gray-600 capitalize">{tool.type.replace('_', ' ')}</p>
+
+                        {/* Expanded Tool Details */}
+                        {expandedTools.has(tool.id) && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mt-4 pt-4 border-t border-gray-200"
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <h5 className="text-sm font-medium text-gray-700 mb-2">Inputs</h5>
+                                {tool.inputs && tool.inputs.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {tool.inputs.map((input: any, index: number) => (
+                                      <div key={index} className="text-sm">
+                                        <span className="font-medium text-gray-900">{input.name}</span>
+                                        <span className="text-gray-500"> ({input.type})</span>
+                                        {input.required && <span className="text-red-500 ml-1">*</span>}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-gray-500">No inputs configured</p>
+                                )}
+                              </div>
+                              <div>
+                                <h5 className="text-sm font-medium text-gray-700 mb-2">Configuration</h5>
+                                <div className="text-sm text-gray-600">
+                                  <div>Enabled: {tool.enabled ? 'Yes' : 'No'}</div>
+                                  <div>Type: {tool.type}</div>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Zap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">No tools added yet</h4>
+                  <p className="text-gray-600 mb-6">Add tools to give your agent capabilities</p>
+                  <button
+                    onClick={() => setShowToolsLibrary(true)}
+                    className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                  >
+                    Add Your First Tool
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Knowledge Tab */}
+          {activeTab === 'knowledge' && (
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Knowledge</h3>
+                  <p className="text-gray-600">Import data to teach your agents about new topics.</p>
+                </div>
+              </div>
+
+              {/* Upload Knowledge Section */}
+              <div className="mb-8">
+                <h4 className="text-base font-medium text-gray-900 mb-4">Upload knowledge</h4>
+                
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-6">
+                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-2">Drag & drop or <button className="text-indigo-600 hover:text-indigo-700 font-medium">choose files</button> to upload.</p>
+                  <p className="text-sm text-gray-500">Supported formats: .csv, .json, .pdf, .xlsx, .xls, .txt, .md, .docx, .pptx</p>
+                  <p className="text-sm text-gray-500">Max 5 files per upload.</p>
+                </div>
+
+                <div className="text-center text-gray-500 mb-6">or</div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <button
+                    onClick={() => {
+                      setKnowledgeWizardType('existing');
+                      setShowKnowledgeWizard(true);
+                    }}
+                    className="p-4 border border-gray-300 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center"
+                  >
+                    <Database className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                    <span className="text-sm font-medium text-gray-900 block">Add existing knowledge</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setKnowledgeWizardType('url');
+                      setShowKnowledgeWizard(true);
+                    }}
+                    className="p-4 border border-gray-300 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center"
+                  >
+                    <Globe className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                    <span className="text-sm font-medium text-gray-900 block">Import URL</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setKnowledgeWizardType('social');
+                      setShowKnowledgeWizard(true);
+                    }}
+                    className="p-4 border border-gray-300 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center"
+                  >
+                    <Users className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                    <span className="text-sm font-medium text-gray-900 block">Import Social Media Content</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setKnowledgeWizardType('text');
+                      setShowKnowledgeWizard(true);
+                    }}
+                    className="p-4 border border-gray-300 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center"
+                  >
+                    <FileText className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                    <span className="text-sm font-medium text-gray-900 block">Text</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Knowledge Items */}
+              {localAgent.knowledgeBases && localAgent.knowledgeBases.length > 0 ? (
+                <div>
+                  <h4 className="text-base font-medium text-gray-900 mb-4">Knowledge Items</h4>
+                  <div className="space-y-3">
+                    {localAgent.knowledgeBases.map((kb: any) => (
+                      <div key={kb.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <FileText className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <h5 className="font-medium text-gray-900">{kb.name}</h5>
+                            <p className="text-sm text-gray-600">{kb.type}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors">
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleRemoveKnowledge(kb.id)}
+                            className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={tool.enabled}
-                          onChange={() => {
-                            // Toggle tool enabled state
-                          }}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
-                    </div>
-                    
-                    <p className="text-sm text-gray-600 mb-4">{tool.template?.description || 'No description available'}</p>
-                    
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">{tool.inputs?.length || 0} inputs</span>
-                      <button className="text-indigo-600 hover:text-indigo-700 font-medium">
-                        Configure
-                      </button>
-                    </div>
+                    ))}
                   </div>
-                ))}
-
-                {/* Add New Tool Card */}
-                <button
-                  onClick={() => setShowToolsModal(true)}
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
-                >
-                  <Plus className="w-8 h-8 text-gray-400 mb-2" />
-                  <span className="text-sm font-medium text-gray-600">Add New Tool</span>
-                  <span className="text-xs text-gray-500">Extend your agent's capabilities</span>
-                </button>
-              </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Brain className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">No knowledge added yet</h4>
+                  <p className="text-gray-600">Add knowledge to help your agent understand your domain</p>
+                </div>
+              )}
             </div>
           )}
 
           {/* Other tabs content would go here */}
           {activeTab === 'prompt' && (
-            <div className="text-center py-12">
-              <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Prompt Configuration</h3>
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Prompt Configuration</h3>
               <p className="text-gray-600">Configure your agent's system prompt and behavior.</p>
             </div>
           )}
 
           {activeTab === 'triggers' && (
-            <div className="text-center py-12">
-              <Play className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Triggers</h3>
-              <p className="text-gray-600">Set up triggers to activate your agent.</p>
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Triggers</h3>
+              <p className="text-gray-600">Run tasks on auto-pilot</p>
             </div>
           )}
 
           {activeTab === 'escalations' && (
-            <div className="text-center py-12">
-              <TestTube className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Escalations</h3>
-              <p className="text-gray-600">Configure escalation rules and fallback responses.</p>
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Escalations</h3>
+              <p className="text-gray-600">Configure escalation rules for your agent.</p>
             </div>
           )}
 
           {activeTab === 'metadata' && (
-            <div className="text-center py-12">
-              <Settings className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Metadata</h3>
-              <p className="text-gray-600">Manage agent metadata and configuration.</p>
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Metadata</h3>
+              <p className="text-gray-600">Additional metadata for your agent.</p>
             </div>
           )}
 
           {activeTab === 'variables' && (
-            <div className="text-center py-12">
-              <Database className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Variables</h3>
-              <p className="text-gray-600">Reuse values throughout your agent with variables like {{customer_name}}</p>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Variables</h3>
+                  <p className="text-gray-600">Reuse values throughout your agent with variables like <code className="bg-gray-100 px-1 rounded">{'{{customer_name}}'}</code></p>
+                </div>
+                <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  Add Variable
+                </button>
+              </div>
+              
+              <div className="text-center py-8">
+                <Code className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h4 className="text-lg font-medium text-gray-900 mb-2">No variables yet</h4>
+                <p className="text-gray-600">Create variables to reuse values across your agent</p>
+              </div>
             </div>
           )}
         </div>
@@ -1300,140 +975,37 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
         )}
       </div>
 
-      {/* Tools Modal */}
+      {/* Modals */}
       <AnimatePresence>
-        {showToolsModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowToolsModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[85vh] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-900">Add Tools</h2>
-                  <button
-                    onClick={() => setShowToolsModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-6 overflow-y-auto max-h-[calc(85vh-140px)]">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {toolTemplates.map((template) => (
-                    <button
-                      key={template.id}
-                      onClick={() => addToolToAgent(template.id)}
-                      className="flex items-start gap-4 p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-left"
-                    >
-                      <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-200">
-                        {template.icon ? <template.icon className="w-5 h-5 text-gray-600" /> : <Zap className="w-5 h-5 text-gray-600" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900">{template.name}</div>
-                        <div className="text-sm text-gray-600 leading-relaxed mt-1">
-                          {template.description}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-2">
-                          {template.category} • {template.type}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
+        {showKnowledgeWizard && renderKnowledgeWizard()}
+        {showToolsLibrary && (
+          <ToolsLibraryModal
+            isOpen={showToolsLibrary}
+            onClose={() => setShowToolsLibrary(false)}
+            onSelectTool={handleAddTool}
+            onCreateCustomTool={() => {
+              setShowToolsLibrary(false);
+              setShowToolWizard(true);
+            }}
+          />
         )}
-      </AnimatePresence>
-
-      {/* Knowledge Modal */}
-      <AnimatePresence>
-        {showKnowledgeModal && !knowledgeWizardType && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowKnowledgeModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[85vh] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-900">Add Knowledge</h2>
-                  <button
-                    onClick={() => setShowKnowledgeModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={() => setKnowledgeWizardType('existing')}
-                    className="flex flex-col items-center p-6 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
-                  >
-                    <Database className="w-12 h-12 text-gray-600 mb-3" />
-                    <span className="font-medium text-gray-900">Existing Knowledge</span>
-                    <span className="text-sm text-gray-600 text-center mt-1">Import from knowledge base templates</span>
-                  </button>
-
-                  <button
-                    onClick={() => setKnowledgeWizardType('url')}
-                    className="flex flex-col items-center p-6 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
-                  >
-                    <Globe className="w-12 h-12 text-gray-600 mb-3" />
-                    <span className="font-medium text-gray-900">Import URLs</span>
-                    <span className="text-sm text-gray-600 text-center mt-1">Import content from web pages</span>
-                  </button>
-
-                  <button
-                    onClick={() => setKnowledgeWizardType('social')}
-                    className="flex flex-col items-center p-6 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
-                  >
-                    <Instagram className="w-12 h-12 text-gray-600 mb-3" />
-                    <span className="font-medium text-gray-900">Social Media</span>
-                    <span className="text-sm text-gray-600 text-center mt-1">Import from social platforms</span>
-                  </button>
-
-                  <button
-                    onClick={() => setKnowledgeWizardType('text')}
-                    className="flex flex-col items-center p-6 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
-                  >
-                    <FileText className="w-12 h-12 text-gray-600 mb-3" />
-                    <span className="font-medium text-gray-900">Text</span>
-                    <span className="text-sm text-gray-600 text-center mt-1">Add custom text content</span>
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
+        {showToolWizard && (
+          <ToolConfigurationWizard
+            isOpen={showToolWizard}
+            onClose={() => {
+              setShowToolWizard(false);
+              setSelectedTool(null);
+            }}
+            agentId={agentId || ''}
+            existingTool={selectedTool}
+            onToolSaved={() => {
+              setShowToolWizard(false);
+              setSelectedTool(null);
+              // Refresh agent data
+              window.location.reload();
+            }}
+          />
         )}
-      </AnimatePresence>
-
-      {/* Knowledge Wizard */}
-      <AnimatePresence>
-        {showKnowledgeModal && knowledgeWizardType && renderKnowledgeWizard()}
       </AnimatePresence>
     </div>
   );
