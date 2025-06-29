@@ -68,7 +68,10 @@ const InfluenceFlowDashboard: React.FC = () => {
   useEffect(() => {
     if (user) {
       loadAgents();
-      initializeMockData();
+      // Add delay before initializing mock data to ensure user record exists
+      setTimeout(() => {
+        initializeMockData();
+      }, 1000);
     }
   }, [user]);
 
@@ -116,8 +119,50 @@ const InfluenceFlowDashboard: React.FC = () => {
     }
   };
 
+  const ensureUserExists = async (): Promise<boolean> => {
+    try {
+      // Check if user exists in the users table
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user!.id)
+        .single();
+
+      if (existingUser) {
+        return true;
+      }
+
+      // If user doesn't exist, create them
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: user!.id,
+          email: user!.email || '',
+          display_name: user!.user_metadata?.full_name || user!.email?.split('@')[0] || 'User',
+          created_at: new Date().toISOString()
+        });
+
+      if (insertError) {
+        console.error('Error creating user record:', insertError);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error ensuring user exists:', error);
+      return false;
+    }
+  };
+
   const initializeMockData = async () => {
     try {
+      // Ensure user exists in the users table first
+      const userExists = await ensureUserExists();
+      if (!userExists) {
+        console.error('Failed to ensure user exists in database');
+        return;
+      }
+
       // Check if mock agent already exists
       const existingAgents = await AgentService.getUserAgents(user!.id);
       
