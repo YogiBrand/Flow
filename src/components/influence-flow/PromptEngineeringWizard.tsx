@@ -20,7 +20,8 @@ import {
   Plus, 
   Minus, 
   Copy, 
-  Play 
+  Play,
+  Check
 } from 'lucide-react';
 
 interface PromptEngineeringWizardProps {
@@ -78,7 +79,6 @@ const PromptEngineeringWizard: React.FC<PromptEngineeringWizardProps> = ({ onClo
   useEffect(() => {
     if (initialPrompt) {
       // Try to extract values from the existing prompt
-      // This is a simple implementation - in a real app, you'd want more robust parsing
       setGeneratedPrompt(initialPrompt);
       
       // Extract core task
@@ -207,7 +207,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Core Task *
                 </label>
                 <textarea
@@ -220,7 +220,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Output Format
                 </label>
                 <textarea
@@ -233,7 +233,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Target Audience
                 </label>
                 <input
@@ -248,7 +248,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Task Complexity
                 </label>
                 <select
@@ -263,7 +263,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   AI Persona Preference
                 </label>
                 <input
@@ -280,7 +280,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 What to Include
               </label>
               <textarea
@@ -293,7 +293,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 What to Exclude
               </label>
               <textarea
@@ -309,7 +309,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Cost Preference
               </label>
               <select
@@ -324,7 +324,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 <CloudUpload className="inline h-4 w-4 mr-1" />
                 Upload Context File (Optional)
               </label>
@@ -346,7 +346,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Globe className="inline h-4 w-4 mr-1" />
                 URLs to Scrape (one per line)
               </label>
@@ -360,7 +360,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Search className="inline h-4 w-4 mr-1" />
                 Search Queries (one per line)
               </label>
@@ -400,7 +400,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
               onChange={handleCheckboxChange}
               className="h-4 w-4 text-indigo-600 rounded"
             />
-            <label htmlFor="enableCoT" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="enableCoT" className="text-sm font-medium text-gray-700">
               Enable Chain-of-Thought Reasoning
             </label>
           </div>
@@ -420,7 +420,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Chain-of-Thought Steps
             </label>
             <textarea
@@ -452,9 +452,9 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
           </button>
           
           {showAdvancedOptions && (
-            <div className="space-y-6 border-l-2 border-purple-200 dark:border-purple-700 pl-6">
+            <div className="space-y-6 border-l-2 border-indigo-200 pl-6">
               <div>
-                <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <Code className="h-4 w-4" />
                   Advanced Reasoning Patterns
                 </h4>
@@ -466,9 +466,9 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
                       type="checkbox"
                       checked={formData.enableReAct}
                       onChange={handleCheckboxChange}
-                      className="h-4 w-4 text-purple-600 rounded"
+                      className="h-4 w-4 text-indigo-600 rounded"
                     />
-                    <label htmlFor="enableReAct" className="text-sm text-gray-700 dark:text-gray-300">
+                    <label htmlFor="enableReAct" className="text-sm text-gray-700">
                       ReAct (Reason + Act + Observe)
                     </label>
                   </div>
@@ -479,9 +479,9 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
                       type="checkbox"
                       checked={formData.enableSelfImprovement}
                       onChange={handleCheckboxChange}
-                      className="h-4 w-4 text-purple-600 rounded"
+                      className="h-4 w-4 text-indigo-600 rounded"
                     />
-                    <label htmlFor="enableSelfImprovement" className="text-sm text-gray-700 dark:text-gray-300">
+                    <label htmlFor="enableSelfImprovement" className="text-sm text-gray-700">
                       Self-Improvement Loop
                     </label>
                   </div>
@@ -492,9 +492,9 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
                       type="checkbox"
                       checked={formData.enableThoughtPlanAct}
                       onChange={handleCheckboxChange}
-                      className="h-4 w-4 text-purple-600 rounded"
+                      className="h-4 w-4 text-indigo-600 rounded"
                     />
-                    <label htmlFor="enableThoughtPlanAct" className="text-sm text-gray-700 dark:text-gray-300">
+                    <label htmlFor="enableThoughtPlanAct" className="text-sm text-gray-700">
                       Thought/Plan/Act Mode
                     </label>
                   </div>
@@ -502,7 +502,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
               </div>
               
               <div>
-                <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <TrendingUp className="h-4 w-4" />
                   Information Prioritization
                 </h4>
@@ -514,9 +514,9 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
                       type="checkbox"
                       checked={formData.enableImplicitPrioritization}
                       onChange={handleCheckboxChange}
-                      className="h-4 w-4 text-purple-600 rounded"
+                      className="h-4 w-4 text-indigo-600 rounded"
                     />
-                    <label htmlFor="enableImplicitPrioritization" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label htmlFor="enableImplicitPrioritization" className="text-sm font-medium text-gray-700">
                       Implicit Prioritization
                     </label>
                   </div>
@@ -527,9 +527,9 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
                       type="checkbox"
                       checked={formData.enableTieredHierarchy}
                       onChange={handleCheckboxChange}
-                      className="h-4 w-4 text-purple-600 rounded"
+                      className="h-4 w-4 text-indigo-600 rounded"
                     />
-                    <label htmlFor="enableTieredHierarchy" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label htmlFor="enableTieredHierarchy" className="text-sm font-medium text-gray-700">
                       Tiered Information Hierarchy
                     </label>
                   </div>
@@ -537,7 +537,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
               </div>
               
               <div>
-                <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <CircleCheck className="h-4 w-4" />
                   Error Handling & Safety
                 </h4>
@@ -549,9 +549,9 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
                       type="checkbox"
                       checked={formData.enableEthicalGuardrails}
                       onChange={handleCheckboxChange}
-                      className="h-4 w-4 text-purple-600 rounded"
+                      className="h-4 w-4 text-indigo-600 rounded"
                     />
-                    <label htmlFor="enableEthicalGuardrails" className="text-sm text-gray-700 dark:text-gray-300">
+                    <label htmlFor="enableEthicalGuardrails" className="text-sm text-gray-700">
                       Ethical & Safety Guardrails
                     </label>
                   </div>
@@ -562,9 +562,9 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
                       type="checkbox"
                       checked={formData.enableConfidenceThreshold}
                       onChange={handleCheckboxChange}
-                      className="h-4 w-4 text-purple-600 rounded"
+                      className="h-4 w-4 text-indigo-600 rounded"
                     />
-                    <label htmlFor="enableConfidenceThreshold" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label htmlFor="enableConfidenceThreshold" className="text-sm font-medium text-gray-700">
                       Confidence Threshold Reporting
                     </label>
                   </div>
@@ -575,9 +575,9 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
                       type="checkbox"
                       checked={formData.enableUnresolvableAmbiguityFallback}
                       onChange={handleCheckboxChange}
-                      className="h-4 w-4 text-purple-600 rounded"
+                      className="h-4 w-4 text-indigo-600 rounded"
                     />
-                    <label htmlFor="enableUnresolvableAmbiguityFallback" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label htmlFor="enableUnresolvableAmbiguityFallback" className="text-sm font-medium text-gray-700">
                       Ambiguity Fallback Message
                     </label>
                   </div>
@@ -588,9 +588,9 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
                       type="checkbox"
                       checked={formData.enablePrioritizedFallbackStrategy}
                       onChange={handleCheckboxChange}
-                      className="h-4 w-4 text-purple-600 rounded"
+                      className="h-4 w-4 text-indigo-600 rounded"
                     />
-                    <label htmlFor="enablePrioritizedFallbackStrategy" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label htmlFor="enablePrioritizedFallbackStrategy" className="text-sm font-medium text-gray-700">
                       Prioritized Fallback Strategy
                     </label>
                   </div>
@@ -619,20 +619,20 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
           
           {showModelAnalysis && (
             <div className="space-y-4">
-              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 mb-3">
                   Recommended for {formData.taskComplexity} Complexity
                 </h4>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border">
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
                     <div>
-                      <div className="font-medium text-gray-900 dark:text-gray-100">Google Gemini 1.5 Pro</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                      <div className="font-medium text-gray-900">Google Gemini 1.5 Pro</div>
+                      <div className="text-sm text-gray-600">
                         Multi-turn conversations, Structured data generation, Content expansion with reasoning
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                         Very Good
                       </span>
                       <div className="text-xs text-gray-500 mt-1">$3.5/$10.5 per 1M tokens</div>
@@ -640,16 +640,16 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
                   </div>
                   
                   <div className="grid grid-cols-3 gap-4 text-center">
-                    <div className="p-2 bg-white dark:bg-gray-800 rounded">
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">300ms</div>
+                    <div className="p-2 bg-white rounded">
+                      <div className="text-sm font-medium text-gray-900">300ms</div>
                       <div className="text-xs text-gray-500">Latency</div>
                     </div>
-                    <div className="p-2 bg-white dark:bg-gray-800 rounded">
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">1M</div>
+                    <div className="p-2 bg-white rounded">
+                      <div className="text-sm font-medium text-gray-900">1M</div>
                       <div className="text-xs text-gray-500">Context</div>
                     </div>
-                    <div className="p-2 bg-white dark:bg-gray-800 rounded">
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">4/5</div>
+                    <div className="p-2 bg-white rounded">
+                      <div className="text-sm font-medium text-gray-900">4/5</div>
                       <div className="text-xs text-gray-500">Impact</div>
                     </div>
                   </div>
@@ -667,8 +667,8 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
         <div className="space-y-4">
           {generatedPrompt ? (
             <>
-              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-                <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-mono leading-relaxed overflow-x-auto">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono leading-relaxed overflow-x-auto">
                   {generatedPrompt}
                 </pre>
               </div>
@@ -685,10 +685,10 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
           ) : (
             <div className="text-center py-8">
               <Wand2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
                 Generate Your Optimized Prompt
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-gray-600 mb-6">
                 Click the button below to generate an optimized prompt based on your configuration.
               </p>
               <button
@@ -711,36 +711,40 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto"
-      onClick={onClose}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gray-50">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
               <Wand2 className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Prompt Engineering Wizard</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Step {currentStep + 1} of {steps.length}: {steps[currentStep].title}</p>
+              <h2 className="text-xl font-semibold text-gray-900">Prompt Engineering Wizard</h2>
+              <p className="text-sm text-gray-600">Step {currentStep + 1} of {steps.length}: {steps[currentStep].title}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-1 rounded"
+            className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Progress Steps */}
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+        <div className="px-6 py-4 border-b border-gray-200 bg-white">
           <div className="flex items-center justify-between max-w-3xl mx-auto">
             {steps.map((step, index) => (
               <div key={index} className="flex items-center">
@@ -776,7 +780,7 @@ Recommended: Google Gemini 1.5 Pro - Very Good performance, $3.5/$10.5 per 1M to
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+        <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
           <button
             onClick={handlePrevious}
             disabled={currentStep === 0}
@@ -843,24 +847,6 @@ const ChevronDown = ({ className }: { className?: string }) => (
     className={className}
   >
     <path d="m6 9 6 6 6-6" />
-  </svg>
-);
-
-// Helper component for the check icon
-const Check = ({ className }: { className?: string }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width="24" 
-    height="24" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <polyline points="20 6 9 17 4 12" />
   </svg>
 );
 

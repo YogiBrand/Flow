@@ -986,20 +986,22 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
       />
 
       {/* Prompt Engineering Wizard */}
-      <PromptEngineeringWizard
-        onClose={() => setShowPromptWizard(false)}
-        onSave={(promptData) => {
-          setCurrentAgent((prev: any) => ({
-            ...prev,
-            chatSettings: { 
-              ...prev.chatSettings, 
-              systemPrompt: promptData.generatedPrompt || prev.chatSettings.systemPrompt 
-            }
-          }));
-          setShowPromptWizard(false);
-        }}
-        initialPrompt={currentAgent.chatSettings.systemPrompt}
-      />
+      {showPromptWizard && (
+        <PromptEngineeringWizard
+          onClose={() => setShowPromptWizard(false)}
+          onSave={(promptData) => {
+            setCurrentAgent((prev: any) => ({
+              ...prev,
+              chatSettings: { 
+                ...prev.chatSettings, 
+                systemPrompt: promptData.generatedPrompt || prev.chatSettings.systemPrompt 
+              }
+            }));
+            setShowPromptWizard(false);
+          }}
+          initialPrompt={currentAgent.chatSettings.systemPrompt}
+        />
+      )}
     </div>
   );
 };
