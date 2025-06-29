@@ -51,6 +51,7 @@ export interface DatabaseTool {
   type: 'web_scraper' | 'search_tool' | 'api_call' | 'data_extractor' | 'code_interpreter' | 'custom';
   config: Record<string, any>;
   enabled: boolean;
+  tool_template_id?: string;
   created_at: string;
   updated_at: string;
 }

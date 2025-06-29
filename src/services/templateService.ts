@@ -250,6 +250,7 @@ export class TemplateService {
         name: template.name,
         type: template.type,
         config: template.default_config,
+        tool_template_id: templateId,
         enabled: true
       })
       .select()

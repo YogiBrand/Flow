@@ -35,12 +35,12 @@ export const useAgentData = (agentId: string) => {
 
         if (agentError) throw agentError;
 
-        // Fetch tools with templates
+        // Fetch tools with templates using the new foreign key relationship
         const { data: tools, error: toolsError } = await supabase
           .from('agent_tools')
           .select(`
             *,
-            tool_template:tool_templates!inner(*)
+            tool_template:tool_templates(*)
           `)
           .eq('agent_id', agentId);
 
