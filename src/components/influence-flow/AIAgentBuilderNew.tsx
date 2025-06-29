@@ -51,12 +51,12 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
   const [saving, setSaving] = useState(false);
   const [agentId, setAgentId] = useState<string | null>(agent?.id || null);
   
-  // Agent data state
+  // Agent data state - initialize directly from prop
   const [agentData, setAgentData] = useState<Partial<DatabaseAgent>>({
     name: agent?.name || 'New AI Agent',
     description: agent?.description || '',
     purpose: agent?.purpose || '',
-    status: 'draft',
+    status: agent?.status || 'draft',
     system_prompt: agent?.system_prompt || '',
     temperature: agent?.temperature || 0.7,
     top_p: agent?.top_p || 0.9,
@@ -80,30 +80,31 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
   const [testResults, setTestResults] = useState<any>(null);
   const [isTesting, setIsTesting] = useState(false);
 
-  // Load agent data if editing existing agent
+  // Load related agent data if editing existing agent
   useEffect(() => {
-    if (agentId) {
-      loadAgentData();
+    if (agentId && agent && !agent.isMock) {
+      loadRelatedAgentData();
     }
-  }, [agentId]);
+  }, [agentId, agent]);
 
-  const loadAgentData = async () => {
-    if (!agentId) return;
+  const loadRelatedAgentData = async () => {
+    if (!agentId || !agent || agent.isMock) return;
     
     setLoading(true);
     try {
+      // Only fetch related data, not the main agent data
       const data = await AgentService.getFullAgentData(agentId);
-      if (data.agent) {
-        setAgentData(data.agent);
-        setKnowledgeBases(data.knowledgeBases);
-        setTools(data.tools);
-        setPrompts(data.prompts);
-        setTriggers(data.triggers);
-        setEscalations(data.escalations);
-        setVariables(data.variables);
+      if (data) {
+        setKnowledgeBases(data.knowledgeBases || []);
+        setTools(data.tools || []);
+        setPrompts(data.prompts || []);
+        setTriggers(data.triggers || []);
+        setEscalations(data.escalations || []);
+        setVariables(data.variables || []);
       }
     } catch (error) {
-      console.error('Error loading agent data:', error);
+      console.error('Error loading related agent data:', error);
+      // Don't throw error for mock agents or missing data
     } finally {
       setLoading(false);
     }
@@ -116,7 +117,7 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
     try {
       let savedAgent: DatabaseAgent;
       
-      if (agentId) {
+      if (agentId && agent && !agent.isMock) {
         // Update existing agent
         savedAgent = await AgentService.updateAgent(agentId, agentData);
       } else {
@@ -155,7 +156,7 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
 
   // Knowledge Base operations
   const addKnowledgeBase = async (type: 'text' | 'document' | 'url' | 'database') => {
-    if (!agentId) {
+    if (!agentId || (agent && agent.isMock)) {
       alert('Please save the agent first');
       return;
     }
@@ -195,7 +196,7 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
 
   // Tool operations
   const addTool = async (type: string) => {
-    if (!agentId) {
+    if (!agentId || (agent && agent.isMock)) {
       alert('Please save the agent first');
       return;
     }
