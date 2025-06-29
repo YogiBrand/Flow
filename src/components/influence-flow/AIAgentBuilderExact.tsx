@@ -40,7 +40,11 @@ import {
   Upload,
   Link,
   Instagram,
-  Type
+  Type,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Youtube
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useAgentData, useToolTemplates, useKnowledgeTemplates } from '../../hooks/useAgentData';
@@ -63,11 +67,18 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
   const [isTesting, setIsTesting] = useState(false);
   const [showToolLibrary, setShowToolLibrary] = useState(false);
   const [showKnowledgeLibrary, setShowKnowledgeLibrary] = useState(false);
+  const [showKnowledgeFlow, setShowKnowledgeFlow] = useState(false);
+  const [knowledgeFlowStep, setKnowledgeFlowStep] = useState(1);
+  const [knowledgeFlowType, setKnowledgeFlowType] = useState<'existing' | 'url' | 'social' | 'text'>('existing');
   const [showToolConfig, setShowToolConfig] = useState(false);
   const [selectedTool, setSelectedTool] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [saving, setSaving] = useState(false);
+  const [selectedKnowledgeBase, setSelectedKnowledgeBase] = useState<string>('');
+  const [selectedPlatform, setSelectedPlatform] = useState<string>('');
+  const [urlImportType, setUrlImportType] = useState<'single' | 'batch'>('single');
+  const [textKnowledge, setTextKnowledge] = useState({ title: '', content: '' });
 
   // Create new agent if no agentId provided
   useEffect(() => {
@@ -187,8 +198,29 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
         enabled: true
       });
       setShowKnowledgeLibrary(false);
+      setShowKnowledgeFlow(false);
+      setKnowledgeFlowStep(1);
     } catch (error) {
       console.error('Error adding knowledge item:', error);
+    }
+  };
+
+  const addTextKnowledge = async () => {
+    if (!agent || !textKnowledge.title || !textKnowledge.content) return;
+    
+    try {
+      await addKnowledgeItemToDB(agent.id, {
+        name: textKnowledge.title,
+        type: 'text',
+        content: textKnowledge.content,
+        metadata: { source: 'manual_text' },
+        enabled: true
+      });
+      setShowKnowledgeFlow(false);
+      setKnowledgeFlowStep(1);
+      setTextKnowledge({ title: '', content: '' });
+    } catch (error) {
+      console.error('Error adding text knowledge:', error);
     }
   };
 
@@ -203,6 +235,20 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
   const openToolConfig = (tool: any) => {
     setSelectedTool(tool);
     setShowToolConfig(true);
+  };
+
+  const startKnowledgeFlow = (type: 'existing' | 'url' | 'social' | 'text') => {
+    setKnowledgeFlowType(type);
+    setKnowledgeFlowStep(1);
+    setShowKnowledgeFlow(true);
+  };
+
+  const nextKnowledgeStep = () => {
+    setKnowledgeFlowStep(prev => prev + 1);
+  };
+
+  const prevKnowledgeStep = () => {
+    setKnowledgeFlowStep(prev => Math.max(1, prev - 1));
   };
 
   if (loading) {
@@ -407,24 +453,33 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
         {/* Knowledge Options */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <button 
-            onClick={() => setShowKnowledgeLibrary(true)}
+            onClick={() => startKnowledgeFlow('existing')}
             className="p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors text-center"
           >
             <Database className="w-8 h-8 text-gray-600 mx-auto mb-2" />
             <span className="text-sm font-medium text-gray-900">Add existing knowledge</span>
           </button>
           
-          <button className="p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors text-center">
+          <button 
+            onClick={() => startKnowledgeFlow('url')}
+            className="p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors text-center"
+          >
             <Globe className="w-8 h-8 text-gray-600 mx-auto mb-2" />
             <span className="text-sm font-medium text-gray-900">Import URL</span>
           </button>
           
-          <button className="p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors text-center">
+          <button 
+            onClick={() => startKnowledgeFlow('social')}
+            className="p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors text-center"
+          >
             <Instagram className="w-8 h-8 text-gray-600 mx-auto mb-2" />
             <span className="text-sm font-medium text-gray-900">Import Social Media Content</span>
           </button>
           
-          <button className="p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors text-center">
+          <button 
+            onClick={() => startKnowledgeFlow('text')}
+            className="p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors text-center"
+          >
             <Type className="w-8 h-8 text-gray-600 mx-auto mb-2" />
             <span className="text-sm font-medium text-gray-900">Text</span>
           </button>
@@ -468,6 +523,300 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
       )}
     </div>
   );
+
+  const renderKnowledgeFlowModal = () => {
+    if (!showKnowledgeFlow) return null;
+
+    const getStepIcon = (step: number, currentStep: number) => {
+      if (step < currentStep) return Check;
+      if (step === currentStep) return step === 1 ? Database : step === 2 ? FileText : Check;
+      return step === 1 ? Database : step === 2 ? FileText : Check;
+    };
+
+    const getStepLabel = () => {
+      switch (knowledgeFlowType) {
+        case 'existing':
+          return ['Select Knowledge Base', 'Choose Resources', 'Review & Add'];
+        case 'url':
+          return ['Import Type', 'Add URLs', 'Review & Import'];
+        case 'social':
+          return ['Select Platform', 'Choose Account', 'Select Content', 'Content Parts', 'Review & Import'];
+        case 'text':
+          return ['Add Text Knowledge'];
+        default:
+          return ['Step 1', 'Step 2', 'Step 3'];
+      }
+    };
+
+    const stepLabels = getStepLabel();
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[85vh] overflow-hidden">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => {
+                    setShowKnowledgeFlow(false);
+                    setKnowledgeFlowStep(1);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <span className="text-sm text-gray-600">Back</span>
+              </div>
+              <button
+                onClick={() => {
+                  setShowKnowledgeFlow(false);
+                  setKnowledgeFlowStep(1);
+                }}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            {/* Progress Steps */}
+            <div className="flex items-center gap-4 mb-6">
+              {stepLabels.map((label, index) => {
+                const step = index + 1;
+                const StepIcon = getStepIcon(step, knowledgeFlowStep);
+                const isActive = step === knowledgeFlowStep;
+                const isCompleted = step < knowledgeFlowStep;
+                
+                return (
+                  <div key={step} className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      isActive ? 'bg-indigo-100' : isCompleted ? 'bg-green-100' : 'bg-gray-100'
+                    }`}>
+                      <StepIcon className={`w-5 h-5 ${
+                        isActive ? 'text-indigo-600' : isCompleted ? 'text-green-600' : 'text-gray-400'
+                      }`} />
+                    </div>
+                    {index < stepLabels.length - 1 && (
+                      <div className="w-8 h-0.5 bg-gray-200"></div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="flex items-center gap-4 text-sm">
+              {stepLabels.map((label, index) => (
+                <span key={index} className={`${
+                  index + 1 === knowledgeFlowStep ? 'text-indigo-600 font-medium' : 
+                  index + 1 < knowledgeFlowStep ? 'text-green-600' : 'text-gray-400'
+                }`}>
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+          
+          <div className="p-6 overflow-y-auto max-h-[calc(85vh-200px)]">
+            {/* Existing Knowledge Flow */}
+            {knowledgeFlowType === 'existing' && knowledgeFlowStep === 1 && (
+              <div className="text-center">
+                <div className="w-16 h-16 bg-indigo-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <Database className="w-8 h-8 text-indigo-600" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Select Knowledge Base</h2>
+                <p className="text-gray-600 mb-6">Choose a knowledge base to import resources from</p>
+                
+                <div className="space-y-3">
+                  {knowledgeTemplates.slice(0, 3).map((template, index) => (
+                    <button
+                      key={template.id}
+                      onClick={() => {
+                        setSelectedKnowledgeBase(template.id);
+                        if (index === 0) nextKnowledgeStep();
+                      }}
+                      className={`w-full p-4 border-2 rounded-lg text-left transition-colors ${
+                        index === 0 
+                          ? 'border-indigo-500 bg-indigo-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          index === 0 
+                            ? 'border-indigo-500 bg-indigo-500' 
+                            : 'border-gray-300'
+                        }`}>
+                          {index === 0 && <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5"></div>}
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900">{template.name}</h3>
+                          <p className="text-sm text-gray-600">{template.description}</p>
+                          <p className="text-xs text-gray-500 mt-1">{Math.floor(Math.random() * 50) + 10} resources</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Social Media Platform Selection */}
+            {knowledgeFlowType === 'social' && knowledgeFlowStep === 1 && (
+              <div className="text-center">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Select Platform</h2>
+                <p className="text-gray-600 mb-6">Choose the social media platform to import content from</p>
+                
+                <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
+                  {[
+                    { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'bg-pink-100 text-pink-600' },
+                    { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: 'bg-blue-100 text-blue-600' },
+                    { id: 'twitter', name: 'Twitter', icon: Twitter, color: 'bg-sky-100 text-sky-600' },
+                    { id: 'youtube', name: 'YouTube', icon: Youtube, color: 'bg-red-100 text-red-600' },
+                    { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'bg-blue-100 text-blue-600' }
+                  ].map((platform) => (
+                    <button
+                      key={platform.id}
+                      onClick={() => {
+                        setSelectedPlatform(platform.id);
+                        nextKnowledgeStep();
+                      }}
+                      className="p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors text-center"
+                    >
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-2 ${platform.color}`}>
+                        <platform.icon className="w-6 h-6" />
+                      </div>
+                      <span className="font-medium text-gray-900">{platform.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* URL Import Type Selection */}
+            {knowledgeFlowType === 'url' && knowledgeFlowStep === 1 && (
+              <div className="text-center">
+                <div className="w-16 h-16 bg-indigo-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <Link className="w-8 h-8 text-indigo-600" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Import URLs</h2>
+                <p className="text-gray-600 mb-6">Choose how you want to import URLs to your knowledge base</p>
+                
+                <div className="space-y-3 max-w-md mx-auto">
+                  <button
+                    onClick={() => {
+                      setUrlImportType('single');
+                      nextKnowledgeStep();
+                    }}
+                    className="w-full p-4 border-2 border-indigo-500 bg-indigo-50 rounded-lg text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full border-2 border-indigo-500 bg-indigo-500">
+                        <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5"></div>
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">Single URL</h3>
+                        <p className="text-sm text-gray-600">Import one URL at a time</p>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setUrlImportType('batch');
+                      nextKnowledgeStep();
+                    }}
+                    className="w-full p-4 border-2 border-gray-200 rounded-lg text-left hover:border-gray-300"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full border-2 border-gray-300"></div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">Batch Import</h3>
+                        <p className="text-sm text-gray-600">Import multiple URLs at once</p>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Text Knowledge Input */}
+            {knowledgeFlowType === 'text' && (
+              <div>
+                <div className="text-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-2">Add Text Knowledge</h2>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                    <input
+                      type="text"
+                      value={textKnowledge.title}
+                      onChange={(e) => setTextKnowledge(prev => ({ ...prev, title: e.target.value }))}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      placeholder="Enter a title for this knowledge..."
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
+                    <textarea
+                      value={textKnowledge.content}
+                      onChange={(e) => setTextKnowledge(prev => ({ ...prev, content: e.target.value }))}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      rows={12}
+                      placeholder="Enter your text content here..."
+                    />
+                    <div className="text-xs text-gray-500 mt-1">
+                      {textKnowledge.content.split(' ').filter(word => word.length > 0).length} words
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="p-6 border-t border-gray-200 bg-gray-50">
+            <div className="flex justify-between">
+              <button 
+                onClick={prevKnowledgeStep}
+                disabled={knowledgeFlowStep === 1}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              
+              {knowledgeFlowType === 'text' ? (
+                <button 
+                  onClick={addTextKnowledge}
+                  disabled={!textKnowledge.title || !textKnowledge.content}
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  Add Knowledge
+                </button>
+              ) : knowledgeFlowType === 'existing' && knowledgeFlowStep === 1 && selectedKnowledgeBase ? (
+                <button 
+                  onClick={() => {
+                    const template = knowledgeTemplates.find(t => t.id === selectedKnowledgeBase);
+                    if (template) addKnowledgeItem(template);
+                  }}
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                >
+                  Next
+                </button>
+              ) : (
+                <button 
+                  onClick={nextKnowledgeStep}
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                >
+                  Next
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -637,93 +986,8 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
         </div>
       )}
 
-      {/* Knowledge Library Modal */}
-      {showKnowledgeLibrary && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[85vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setShowKnowledgeLibrary(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <div>
-                    <div className="flex items-center gap-4 mb-2">
-                      <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-                        <Database className="w-5 h-5 text-indigo-600" />
-                      </div>
-                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-gray-400" />
-                      </div>
-                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <Check className="w-5 h-5 text-gray-400" />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm">
-                      <span className="text-indigo-600 font-medium">Select Knowledge Base</span>
-                      <span className="text-gray-400">Choose Resources</span>
-                      <span className="text-gray-400">Review & Add</span>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowKnowledgeLibrary(false)}
-                  className="text-gray-400 hover:text-gray-600 p-1 rounded"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              
-              <div className="text-center">
-                <div className="w-16 h-16 bg-indigo-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <Database className="w-8 h-8 text-indigo-600" />
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Select Knowledge Base</h2>
-                <p className="text-gray-600">Choose a knowledge base to import resources from</p>
-              </div>
-            </div>
-            
-            <div className="p-6 overflow-y-auto max-h-[calc(85vh-200px)]">
-              <div className="space-y-3">
-                {knowledgeTemplates.slice(0, 3).map((template, index) => (
-                  <button
-                    key={template.id}
-                    onClick={() => addKnowledgeItem(template)}
-                    className={`w-full p-4 border-2 rounded-lg text-left transition-colors ${
-                      index === 0 
-                        ? 'border-indigo-500 bg-indigo-50' 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded-full border-2 ${
-                        index === 0 
-                          ? 'border-indigo-500 bg-indigo-500' 
-                          : 'border-gray-300'
-                      }`}>
-                        {index === 0 && <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5"></div>}
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900">{template.name}</h3>
-                        <p className="text-sm text-gray-600">{template.description}</p>
-                        <p className="text-xs text-gray-500 mt-1">{Math.floor(Math.random() * 50) + 10} resources</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-              
-              <div className="flex justify-between mt-8">
-                <button className="px-4 py-2 text-gray-600 hover:text-gray-800">Previous</button>
-                <button className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Next</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Knowledge Flow Modal */}
+      {renderKnowledgeFlowModal()}
 
       {/* Tool Configuration Modal */}
       {showToolConfig && selectedTool && (
