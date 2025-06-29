@@ -565,7 +565,7 @@ const AgentsView: React.FC<{
               )}
             </div>
             <div className="text-xs text-gray-500">
-              {agent.tools.length} tools
+              {agent.tools?.length || 0} tools
             </div>
           </div>
         </motion.div>

@@ -1,6 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, X, Save, Wand2, Brain, MessageSquare, Code, TrendingUp, CheckCircle as CircleCheck, DollarSign, Globe, Search, UploadCloud as CloudUpload, Lightbulb, Settings2, Plus, Minus, Copy, Play } from 'lucide-react';
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  X, 
+  Save, 
+  Wand2, 
+  Brain, 
+  MessageSquare, 
+  Code, 
+  TrendingUp, 
+  CheckCircle as CircleCheck, 
+  DollarSign, 
+  Globe, 
+  Search, 
+  UploadCloud as CloudUpload, 
+  Lightbulb, 
+  Settings2, 
+  Plus, 
+  Minus, 
+  Copy, 
+  Play 
+} from 'lucide-react';
 
 interface PromptEngineeringWizardProps {
   onClose: () => void;
