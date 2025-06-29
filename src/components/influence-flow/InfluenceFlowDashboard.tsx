@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   MessageSquare, 
@@ -20,8 +20,12 @@ import MessagingWorkflowBuilder from './MessagingWorkflowBuilder';
 import AIAgentBuilder from './AIAgentBuilder';
 import AIAgentBuilderNew from './AIAgentBuilderNew';
 import { MessagingWorkflow, AIAgent } from '../../types/influenceFlow';
+import { useAuth } from '../../hooks/useAuth';
+import { AgentService } from '../../services/agentService';
+import { supabase } from '../../lib/supabase';
 
 const InfluenceFlowDashboard: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'workflows' | 'agents' | 'analytics'>('workflows');
   const [showWorkflowBuilder, setShowWorkflowBuilder] = useState(false);
   const [showAgentBuilder, setShowAgentBuilder] = useState(false);
@@ -29,8 +33,10 @@ const InfluenceFlowDashboard: React.FC = () => {
   const [selectedWorkflow, setSelectedWorkflow] = useState<MessagingWorkflow | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<AIAgent | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [agents, setAgents] = useState<AIAgent[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - replace with actual data fetching
+  // Mock workflows data (keeping original functionality)
   const workflows: MessagingWorkflow[] = [
     {
       id: '550e8400-e29b-41d4-a716-446655440001',
@@ -58,29 +64,117 @@ const InfluenceFlowDashboard: React.FC = () => {
     }
   ];
 
-  const agents: AIAgent[] = [
-    {
-      id: '550e8400-e29b-41d4-a716-446655440003',
-      name: 'Content Assistant',
-      description: 'AI agent for content creation and optimization',
-      purpose: 'Help create engaging social media content',
-      tools: [],
-      memory: { enabled: true, type: 'vector_store', contextSize: 4000, recallSettings: {} },
-      chatSettings: {
-        systemPrompt: 'You are a helpful content creation assistant.',
-        temperature: 0.7,
-        topP: 0.9,
-        outputMode: 'message',
-        model: 'gpt-4'
-      },
-      executionLogic: {
-        triggers: ['manual'],
-        maxRetries: 3
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+  // Load agents from Supabase
+  useEffect(() => {
+    if (user) {
+      loadAgents();
+      initializeMockData();
     }
-  ];
+  }, [user]);
+
+  const loadAgents = async () => {
+    try {
+      setLoading(true);
+      const dbAgents = await AgentService.getUserAgents(user!.id);
+      
+      // Convert database agents to frontend format
+      const formattedAgents: AIAgent[] = dbAgents.map(dbAgent => ({
+        id: dbAgent.id,
+        name: dbAgent.name,
+        description: dbAgent.description,
+        purpose: dbAgent.purpose,
+        tools: [], // Will be loaded separately if needed
+        memory: {
+          enabled: dbAgent.memory_enabled,
+          type: dbAgent.memory_type,
+          contextSize: dbAgent.context_size,
+          recallSettings: {}
+        },
+        chatSettings: {
+          systemPrompt: dbAgent.system_prompt,
+          temperature: dbAgent.temperature,
+          topP: dbAgent.top_p,
+          outputMode: dbAgent.output_mode,
+          model: dbAgent.model
+        },
+        executionLogic: {
+          triggers: ['manual'], // Default for now
+          maxRetries: dbAgent.max_retries,
+          fallbackResponse: dbAgent.fallback_response
+        },
+        createdAt: dbAgent.created_at,
+        updatedAt: dbAgent.updated_at
+      }));
+
+      setAgents(formattedAgents);
+    } catch (error) {
+      console.error('Error loading agents:', error);
+      // Fallback to mock data if there's an error
+      setAgents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const initializeMockData = async () => {
+    try {
+      // Check if mock agent already exists
+      const existingAgents = await AgentService.getUserAgents(user!.id);
+      
+      if (existingAgents.length === 0) {
+        // Create mock agent
+        const mockAgent = await AgentService.createAgent({
+          user_id: user!.id,
+          name: 'Content Assistant',
+          description: 'AI agent for content creation and optimization',
+          purpose: 'Help create engaging social media content',
+          status: 'active',
+          system_prompt: 'You are a helpful content creation assistant.',
+          temperature: 0.7,
+          top_p: 0.9,
+          model: 'gpt-4',
+          output_mode: 'message',
+          memory_enabled: true,
+          memory_type: 'vector_store',
+          context_size: 4000,
+          max_retries: 3,
+          fallback_response: 'I apologize, but I encountered an error. Please try again.'
+        });
+
+        // Add some mock tools for the agent
+        await AgentService.createTool({
+          agent_id: mockAgent.id,
+          name: 'Web Scraper',
+          type: 'web_scraper',
+          config: { timeout: 30000, maxPages: 10 },
+          enabled: true
+        });
+
+        await AgentService.createTool({
+          agent_id: mockAgent.id,
+          name: 'Search Tool',
+          type: 'search_tool',
+          config: { engine: 'google', maxResults: 10 },
+          enabled: true
+        });
+
+        // Add mock knowledge base
+        await AgentService.createKnowledgeBase({
+          agent_id: mockAgent.id,
+          name: 'Content Guidelines',
+          type: 'text',
+          content: 'Guidelines for creating engaging social media content...',
+          metadata: { category: 'guidelines' },
+          enabled: true
+        });
+
+        // Reload agents after creating mock data
+        loadAgents();
+      }
+    } catch (error) {
+      console.error('Error initializing mock data:', error);
+    }
+  };
 
   const stats = [
     {
@@ -144,6 +238,7 @@ const InfluenceFlowDashboard: React.FC = () => {
         onBack={() => {
           setShowNewAgentBuilder(false);
           setSelectedAgent(null);
+          loadAgents(); // Reload agents when coming back
         }}
       />
     );
@@ -257,6 +352,7 @@ const InfluenceFlowDashboard: React.FC = () => {
         {activeTab === 'agents' && (
           <AgentsView 
             agents={agents}
+            loading={loading}
             onEditAgent={(agent) => {
               setSelectedAgent(agent);
               setShowNewAgentBuilder(true);
@@ -356,8 +452,34 @@ const WorkflowsView: React.FC<{
 // Agents View Component
 const AgentsView: React.FC<{ 
   agents: AIAgent[]; 
+  loading: boolean;
   onEditAgent: (agent: AIAgent) => void;
-}> = ({ agents, onEditAgent }) => {
+}> = ({ agents, loading, onEditAgent }) => {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gray-200 rounded-lg"></div>
+                <div>
+                  <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-16"></div>
+                </div>
+              </div>
+            </div>
+            <div className="h-3 bg-gray-200 rounded w-full mb-4"></div>
+            <div className="flex items-center justify-between">
+              <div className="h-3 bg-gray-200 rounded w-16"></div>
+              <div className="h-3 bg-gray-200 rounded w-12"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {agents.map((agent) => (
