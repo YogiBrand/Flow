@@ -1,5 +1,11 @@
 import { supabase } from './supabase';
 
+// Helper function to validate UUID format
+const isValidUUID = (str: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 export const addKnowledgeItemToDB = async (agentId: string, item: any) => {
   const { data, error } = await supabase
     .from('agent_knowledge_bases')
@@ -39,6 +45,17 @@ export const updateKnowledgeItemInDB = async (id: string, updates: any) => {
 };
 
 export const addToolToDB = async (agentId: string, templateId: string) => {
+  // Validate that templateId is a valid UUID
+  if (!isValidUUID(templateId)) {
+    return { 
+      data: null, 
+      error: { 
+        message: `Invalid template ID format: '${templateId}'. Expected a valid UUID.`,
+        code: 'INVALID_UUID'
+      } 
+    };
+  }
+
   // First get the template
   const { data: template, error: templateError } = await supabase
     .from('tool_templates')
