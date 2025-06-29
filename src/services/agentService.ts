@@ -40,9 +40,9 @@ export class AgentService {
       .from('ai_agents')
       .select('*')
       .eq('id', agentId)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error) throw error;
     return data;
   }
 
