@@ -691,100 +691,84 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
                 </div>
               </div>
 
-              {/* Tools List */}
+              {/* Tools Grid */}
               {localAgent.tools && localAgent.tools.length > 0 ? (
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {localAgent.tools.map((tool: any) => (
-                    <div key={tool.id} className="border border-gray-200 rounded-lg">
-                      <div className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                              {tool.icon ? (
-                                <tool.icon className="w-5 h-5 text-purple-600" />
-                              ) : (
-                                <Zap className="w-5 h-5 text-purple-600" />
-                              )}
-                            </div>
-                            <div>
-                              <h4 className="font-medium text-gray-900">{tool.name}</h4>
-                              <p className="text-sm text-gray-600">{tool.type?.replace('_', ' ')}</p>
-                            </div>
+                    <div key={tool.id} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+                      {/* Tool Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <Users className="w-6 h-6 text-blue-600" />
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => toggleToolExpansion(tool.id)}
-                              className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                            >
-                              {expandedTools.has(tool.id) ? (
-                                <ChevronDown className="w-4 h-4" />
-                              ) : (
-                                <ChevronRight className="w-4 h-4" />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedTool(tool);
-                                setShowToolWizard(true);
-                              }}
-                              className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                            >
-                              <Settings className="w-4 h-4" />
-                            </button>
-                            <button className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
-                              <Play className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleRemoveTool(tool.id)}
-                              className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{tool.name}</h4>
+                            <p className="text-sm text-gray-600 capitalize">{tool.type?.replace('_', ' ')}</p>
                           </div>
                         </div>
+                        <div className="flex items-center">
+                          <div className={`w-3 h-3 rounded-full ${tool.enabled ? 'bg-green-500' : 'bg-gray-400'}`} />
+                        </div>
+                      </div>
 
-                        {/* Expanded Tool Details */}
-                        {expandedTools.has(tool.id) && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="mt-4 pt-4 border-t border-gray-200"
-                          >
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <h5 className="text-sm font-medium text-gray-700 mb-2">Inputs</h5>
-                                {tool.inputs && tool.inputs.length > 0 ? (
-                                  <div className="space-y-2">
-                                    {tool.inputs.map((input: any, index: number) => (
-                                      <div key={index} className="text-sm">
-                                        <span className="font-medium text-gray-900">{input.name}</span>
-                                        <span className="text-gray-500"> ({input.type})</span>
-                                        {input.required && <span className="text-red-500 ml-1">*</span>}
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <p className="text-sm text-gray-500">No inputs configured</p>
-                                )}
-                              </div>
-                              <div>
-                                <h5 className="text-sm font-medium text-gray-700 mb-2">Configuration</h5>
-                                <div className="text-sm text-gray-600">
-                                  <div>Enabled: {tool.enabled ? 'Yes' : 'No'}</div>
-                                  <div>Type: {tool.type}</div>
-                                </div>
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
+                      {/* Tool Description */}
+                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                        {tool.description || 'No description available'}
+                      </p>
+
+                      {/* Tool Category */}
+                      <div className="mb-4">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 capitalize">
+                          {tool.category || 'General'}
+                        </span>
+                      </div>
+
+                      {/* Tool Stats */}
+                      <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+                        <span>{tool.inputs?.length || 0} inputs</span>
+                        <span>{tool.outputs?.length || 0} outputs</span>
+                      </div>
+
+                      {/* Tool Actions */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedTool(tool);
+                            setShowToolWizard(true);
+                          }}
+                          className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                        >
+                          Configure
+                        </button>
+                        <button className="px-3 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors">
+                          <Play className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleRemoveTool(tool.id)}
+                          className="px-3 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-lg hover:bg-red-200 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   ))}
+
+                  {/* Add New Tool Card */}
+                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-indigo-400 hover:bg-indigo-50 transition-all cursor-pointer"
+                       onClick={() => setShowToolsLibrary(true)}>
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
+                      <Plus className="w-6 h-6 text-gray-600" />
+                    </div>
+                    <h4 className="font-medium text-gray-900 mb-2">Add New Tool</h4>
+                    <p className="text-sm text-gray-600">Extend your agent's capabilities</p>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <Zap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Zap className="w-8 h-8 text-gray-400" />
+                  </div>
                   <h4 className="text-lg font-medium text-gray-900 mb-2">No tools added yet</h4>
                   <p className="text-gray-600 mb-6">Add tools to give your agent capabilities</p>
                   <button
