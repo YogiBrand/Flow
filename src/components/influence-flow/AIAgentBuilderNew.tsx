@@ -46,31 +46,22 @@ import {
   ArrowLeft,
   CheckCircle,
   Circle,
+  Instagram,
+  Twitter,
+  Facebook,
+  Youtube,
   TrendingUp,
-  Star,
-  Folder,
-  Phone,
-  Calendar as CalendarIcon,
-  FileSpreadsheet,
   Image,
   Video,
   Mic,
-  Camera,
-  Shield,
-  Key,
-  Cpu,
-  BarChart,
-  PieChart,
-  LineChart,
-  Activity,
-  Type,
-  List,
-  ToggleLeft,
-  Upload as UploadIcon,
+  BookOpen,
+  ExternalLink,
+  Download,
+  FolderOpen,
   Table,
-  MoreHorizontal,
+  Type,
   Layers,
-  Sparkles
+  Camera
 } from 'lucide-react';
 
 interface AIAgentBuilderNewProps {
@@ -101,46 +92,90 @@ interface Tool {
   color: string;
 }
 
-interface AvailableTool {
+interface KnowledgeItem {
   id: string;
   name: string;
-  description: string;
-  category: string;
-  icon: any;
-  color: string;
-  provider: string;
-  trending?: boolean;
-  popular?: boolean;
+  type: 'file' | 'text' | 'website' | 'social_media' | 'table';
+  content?: string;
+  source?: string;
+  size?: string;
+  createdAt: string;
 }
 
-interface CustomToolStep {
+interface SocialMediaAccount {
   id: string;
-  type: 'llm' | 'api' | 'knowledge' | 'google' | 'python' | 'javascript';
-  name: string;
-  description: string;
-  config: Record<string, any>;
-}
-
-interface CustomTool {
-  id: string;
-  name: string;
-  description: string;
-  inputs: Array<{
-    id: string;
-    name: string;
-    type: string;
-    description: string;
-    required: boolean;
-  }>;
-  steps: CustomToolStep[];
+  platform: 'instagram' | 'linkedin' | 'twitter' | 'facebook' | 'youtube' | 'tiktok';
+  username: string;
+  displayName: string;
+  profileImage: string;
+  isConnected: boolean;
+  followerCount?: number;
 }
 
 const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) => {
-  const [activeTab, setActiveTab] = useState('tools');
+  const [activeTab, setActiveTab] = useState('knowledge');
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [showToolWizard, setShowToolWizard] = useState(false);
   const [showToolLibrary, setShowToolLibrary] = useState(false);
   const [showNewToolBuilder, setShowNewToolBuilder] = useState(false);
+  const [showSocialMediaImport, setShowSocialMediaImport] = useState(false);
+  const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeItem[]>([
+    {
+      id: '1',
+      name: 'Brand Guidelines.pdf',
+      type: 'file',
+      source: 'Upload',
+      size: '2.4 MB',
+      createdAt: '2024-01-15'
+    },
+    {
+      id: '2',
+      name: 'Product Information',
+      type: 'text',
+      content: 'Our flagship product is designed for...',
+      size: '1.2 KB',
+      createdAt: '2024-01-14'
+    }
+  ]);
+
+  // Mock social media accounts from the database
+  const [socialMediaAccounts] = useState<SocialMediaAccount[]>([
+    {
+      id: '1',
+      platform: 'instagram',
+      username: '@johndoe',
+      displayName: 'John Doe',
+      profileImage: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+      isConnected: true,
+      followerCount: 15400
+    },
+    {
+      id: '2',
+      platform: 'linkedin',
+      username: 'john-doe-marketing',
+      displayName: 'John Doe',
+      profileImage: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+      isConnected: true,
+      followerCount: 2800
+    },
+    {
+      id: '3',
+      platform: 'twitter',
+      username: '@johndoemarketing',
+      displayName: 'John Doe Marketing',
+      profileImage: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+      isConnected: true,
+      followerCount: 8900
+    },
+    {
+      id: '4',
+      platform: 'youtube',
+      username: 'JohnDoeChannel',
+      displayName: 'John Doe Channel',
+      profileImage: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+      isConnected: false
+    }
+  ]);
 
   const [currentAgent] = useState({
     id: `agent_${Date.now()}`,
@@ -267,166 +302,6 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
     ]
   });
 
-  // Available tools for the library
-  const availableTools: AvailableTool[] = [
-    // Trending Tools
-    {
-      id: 'knowledge_base_search',
-      name: 'Add Answer to Knowledge Base',
-      description: 'Search and retrieve information from knowledge bases',
-      category: 'Knowledge',
-      icon: Brain,
-      color: 'bg-green-500',
-      provider: 'Relevance AI',
-      trending: true
-    },
-    {
-      id: 'notion_comment',
-      name: 'Add Comment to Notion',
-      description: 'Add comments and notes to Notion pages',
-      category: 'Communications',
-      icon: FileText,
-      color: 'bg-gray-800',
-      provider: 'Relevance AI'
-    },
-    {
-      id: 'trello_comment',
-      name: 'Add Comment to Trello Card',
-      description: 'Add comments to Trello cards for project management',
-      category: 'Communications',
-      icon: Briefcase,
-      color: 'bg-blue-600',
-      provider: 'Relevance AI'
-    },
-    {
-      id: 'google_reviews',
-      name: 'Add Google Play Store Reviews to Knowledge',
-      description: 'Extract and analyze Google Play Store reviews',
-      category: 'Data scraper',
-      icon: Star,
-      color: 'bg-yellow-500',
-      provider: 'Relevance AI'
-    },
-    {
-      id: 'faq_entry',
-      name: 'Add FAQ Entry to Knowledge Base',
-      description: 'Create and manage FAQ entries in knowledge bases',
-      category: 'Knowledge',
-      icon: MessageSquare,
-      color: 'bg-orange-500',
-      provider: 'Relevance AI'
-    },
-    {
-      id: 'email_campaign',
-      name: 'Add Lead to Email Campaign',
-      description: 'Add qualified leads to email marketing campaigns',
-      category: 'CRM',
-      icon: Mail,
-      color: 'bg-blue-500',
-      provider: 'Relevance AI'
-    },
-    {
-      id: 'linkedin_employees',
-      name: 'Add LinkedIn Employees to Knowledge',
-      description: 'Extract employee data from LinkedIn company pages',
-      category: 'Data scraper',
-      icon: Linkedin,
-      color: 'bg-blue-700',
-      provider: 'Relevance AI'
-    },
-    {
-      id: 'linear_tickets',
-      name: 'Add Linear Tickets to Knowledge Base',
-      description: 'Import and organize Linear tickets in knowledge base',
-      category: 'Knowledge',
-      icon: Target,
-      color: 'bg-purple-600',
-      provider: 'Relevance AI'
-    },
-    {
-      id: 'slack_threads',
-      name: 'Add Slack Threads to Knowledge',
-      description: 'Archive important Slack conversations to knowledge base',
-      category: 'Communications',
-      icon: Slack,
-      color: 'bg-green-600',
-      provider: 'Relevance AI'
-    },
-    {
-      id: 'steam_reviews',
-      name: 'Add Steam Game Reviews to Knowledge',
-      description: 'Collect and analyze Steam game reviews',
-      category: 'Data scraper',
-      icon: Activity,
-      color: 'bg-gray-700',
-      provider: 'Relevance AI'
-    },
-    {
-      id: 'candidate_tags',
-      name: 'Add Tags and Note to Candidate in Ashby',
-      description: 'Tag and annotate candidates in Ashby ATS',
-      category: 'CRM',
-      icon: User,
-      color: 'bg-indigo-500',
-      provider: 'Relevance AI'
-    },
-    // Additional tools by category
-    {
-      id: 'hubspot_contact',
-      name: 'Create HubSpot Contact',
-      description: 'Create new contacts in HubSpot CRM',
-      category: 'CRM',
-      icon: Building,
-      color: 'bg-orange-600',
-      provider: 'HubSpot'
-    },
-    {
-      id: 'google_calendar',
-      name: 'Schedule Google Calendar Event',
-      description: 'Create calendar events and schedule meetings',
-      category: 'Calendar',
-      icon: CalendarIcon,
-      color: 'bg-blue-500',
-      provider: 'Google Calendar'
-    },
-    {
-      id: 'outlook_email',
-      name: 'Send Outlook Email',
-      description: 'Send emails through Outlook',
-      category: 'Communications',
-      icon: Mail,
-      color: 'bg-blue-600',
-      provider: 'Outlook'
-    },
-    {
-      id: 'web_scraper',
-      name: 'Web Scraper',
-      description: 'Extract data from any website',
-      category: 'Data scraper',
-      icon: Globe,
-      color: 'bg-gray-600',
-      provider: 'Built-in'
-    },
-    {
-      id: 'api_call',
-      name: 'HTTP API Call',
-      description: 'Make HTTP requests to external APIs',
-      category: 'Data scraper',
-      icon: Webhook,
-      color: 'bg-purple-500',
-      provider: 'Built-in'
-    },
-    {
-      id: 'data_analysis',
-      name: 'Data Analysis',
-      description: 'Analyze and process structured data',
-      category: 'Data scraper',
-      icon: BarChart,
-      color: 'bg-green-500',
-      provider: 'Built-in'
-    }
-  ];
-
   const tabs = [
     { id: 'prompt', label: 'Prompt', icon: Brain, color: 'text-purple-600' },
     { id: 'tools', label: 'Tools', icon: Zap, color: 'text-blue-600' },
@@ -456,782 +331,148 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
     }
   };
 
-  // New Tool Builder Component
-  const NewToolBuilder = ({ onClose }: { onClose: () => void }) => {
-    const [currentStep, setCurrentStep] = useState(0);
-    const [toolData, setToolData] = useState<CustomTool>({
-      id: `custom_tool_${Date.now()}`,
-      name: '',
-      description: '',
-      inputs: [],
-      steps: []
-    });
-
-    const [showInputDropdown, setShowInputDropdown] = useState(false);
-    const [showStepDropdown, setShowStepDropdown] = useState(false);
-
-    const inputTypes = [
-      { id: 'text', label: 'Text', icon: Type, description: 'Single line text input' },
-      { id: 'long_text', label: 'Long text', icon: FileText, description: 'Multi-line text area' },
-      { id: 'number', label: 'Number', icon: Hash, description: 'Numeric input' },
-      { id: 'json', label: 'JSON', icon: Code, description: 'JSON object input' },
-      { id: 'file_url', label: 'File to URL', icon: UploadIcon, description: 'File upload to URL' },
-      { id: 'table', label: 'Table', icon: Table, description: 'Structured table data' },
-      { id: 'more', label: 'More', icon: MoreHorizontal, description: 'Additional input types' }
-    ];
-
-    const stepTypes = [
-      { id: 'llm', label: 'LLM', icon: Brain, description: 'Use a large language model such as GPT', color: 'bg-purple-600' },
-      { id: 'knowledge', label: 'Knowledge', icon: Database, description: 'Search knowledge bases', color: 'bg-green-600' },
-      { id: 'google', label: 'Google', icon: Search, description: 'Search the web for keywords using Google', color: 'bg-blue-500' },
-      { id: 'api', label: 'API', icon: Webhook, description: 'Run an API request', color: 'bg-indigo-600' },
-      { id: 'python', label: 'Python', icon: Code, description: 'Run Python code', color: 'bg-yellow-600' },
-      { id: 'javascript', label: 'Javascript Code', icon: Code, description: 'Run Javascript code', color: 'bg-orange-500' }
-    ];
-
-    const addInput = (type: string) => {
-      const newInput = {
-        id: `input_${Date.now()}`,
-        name: `Input ${toolData.inputs.length + 1}`,
-        type,
-        description: '',
-        required: false
-      };
-      setToolData(prev => ({
-        ...prev,
-        inputs: [...prev.inputs, newInput]
-      }));
-      setShowInputDropdown(false);
-    };
-
-    const addStep = (type: string) => {
-      const newStep: CustomToolStep = {
-        id: `step_${Date.now()}`,
-        type: type as any,
-        name: `${type.toUpperCase()} Step`,
-        description: '',
-        config: {}
-      };
-      setToolData(prev => ({
-        ...prev,
-        steps: [...prev.steps, newStep]
-      }));
-      setShowStepDropdown(false);
-    };
-
-    const removeInput = (inputId: string) => {
-      setToolData(prev => ({
-        ...prev,
-        inputs: prev.inputs.filter(input => input.id !== inputId)
-      }));
-    };
-
-    const removeStep = (stepId: string) => {
-      setToolData(prev => ({
-        ...prev,
-        steps: prev.steps.filter(step => step.id !== stepId)
-      }));
-    };
-
-    const getStepIcon = (type: string) => {
-      const stepType = stepTypes.find(s => s.id === type);
-      return stepType?.icon || Code;
-    };
-
-    const getStepColor = (type: string) => {
-      const stepType = stepTypes.find(s => s.id === type);
-      return stepType?.color || 'bg-gray-600';
-    };
-
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-      >
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
-        >
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={onClose}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span className="text-sm">Tools</span>
-                </button>
-                <span className="text-gray-400">/</span>
-                <span className="text-sm text-gray-600">Untitled tool</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-500">Unsaved</span>
-                <button className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                  Save changes
-                </button>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
-                  <Play className="w-4 h-4" />
-                  Run tool
-                </button>
-              </div>
-            </div>
-
-            {/* Tool Title and Description */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
-                  <Plus className="w-6 h-6 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  value={toolData.name}
-                  onChange={(e) => setToolData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Type title..."
-                  className="text-2xl font-semibold text-gray-900 bg-transparent border-none outline-none placeholder-gray-400 flex-1"
-                />
-              </div>
-              <input
-                type="text"
-                value={toolData.description}
-                onChange={(e) => setToolData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Type short description..."
-                className="text-gray-600 bg-transparent border-none outline-none placeholder-gray-400 w-full"
-              />
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-8">
-            {/* Inputs Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Zap className="w-4 h-4 text-purple-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Inputs</h3>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button className="px-3 py-1.5 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm flex items-center gap-2">
-                    <Settings className="w-4 h-4" />
-                    Configure
-                  </button>
-                  <button className="px-3 py-1.5 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm flex items-center gap-2">
-                    <Bot className="w-4 h-4" />
-                    For Agent
-                  </button>
-                </div>
-              </div>
-
-              <p className="text-gray-600 text-sm">Add type of input:</p>
-
-              {/* Input Type Buttons */}
-              <div className="flex flex-wrap gap-2">
-                {inputTypes.map((inputType) => (
-                  <button
-                    key={inputType.id}
-                    onClick={() => inputType.id === 'more' ? setShowInputDropdown(!showInputDropdown) : addInput(inputType.id)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm flex items-center gap-2"
-                  >
-                    <inputType.icon className="w-4 h-4" />
-                    {inputType.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Input Dropdown */}
-              {showInputDropdown && (
-                <div className="relative">
-                  <div className="absolute top-2 left-0 w-80 bg-white border border-gray-200 rounded-xl shadow-lg z-10 p-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-medium text-gray-900">Select input...</span>
-                        <button
-                          onClick={() => setShowInputDropdown(false)}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium text-gray-500 mb-2">Options</div>
-                        {[
-                          { id: 'checkbox', label: 'Checkbox', icon: CheckCircle },
-                          { id: 'text_list', label: 'Text list', icon: List },
-                          { id: 'json_list', label: 'List of JSONs', icon: Code },
-                          { id: 'file_text', label: 'File to text', icon: FileText },
-                          { id: 'multiple_files', label: 'Multiple files to URLs', icon: UploadIcon },
-                          { id: 'api_key', label: 'API key input', icon: Key },
-                          { id: 'oauth', label: 'OAuth account', icon: Shield }
-                        ].map((option) => (
-                          <button
-                            key={option.id}
-                            onClick={() => addInput(option.id)}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
-                          >
-                            <option.icon className="w-4 h-4 text-gray-600" />
-                            <span className="text-sm text-gray-900">{option.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Added Inputs */}
-              {toolData.inputs.map((input) => (
-                <div key={input.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        value={input.name}
-                        onChange={(e) => setToolData(prev => ({
-                          ...prev,
-                          inputs: prev.inputs.map(i => i.id === input.id ? { ...i, name: e.target.value } : i)
-                        }))}
-                        className="font-medium text-gray-900 bg-transparent border-none outline-none mb-2"
-                        placeholder="Input name"
-                      />
-                      <input
-                        type="text"
-                        value={input.description}
-                        onChange={(e) => setToolData(prev => ({
-                          ...prev,
-                          inputs: prev.inputs.map(i => i.id === input.id ? { ...i, description: e.target.value } : i)
-                        }))}
-                        className="text-sm text-gray-600 bg-transparent border-none outline-none w-full"
-                        placeholder="Input description"
-                      />
-                    </div>
-                    <button
-                      onClick={() => removeInput(input.id)}
-                      className="text-gray-400 hover:text-red-600 p-1"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Steps Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Layers className="w-4 h-4 text-blue-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">Steps</h3>
-              </div>
-
-              <p className="text-gray-600 text-sm">
-                Define the logic of your tool. Chain together LLM prompts, call APIs, run code and more.
-              </p>
-
-              {/* Step Type Buttons */}
-              <div className="flex flex-wrap gap-3">
-                <div className="relative">
-                  <button
-                    onClick={() => setShowStepDropdown(!showStepDropdown)}
-                    className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Step
-                  </button>
-
-                  {/* Step Dropdown */}
-                  {showStepDropdown && (
-                    <div className="absolute top-12 left-0 w-80 bg-white border border-gray-200 rounded-xl shadow-lg z-10 p-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-sm font-medium text-gray-900">Search 9,000+ tool steps...</span>
-                          <button
-                            onClick={() => setShowStepDropdown(false)}
-                            className="text-gray-400 hover:text-gray-600"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                        
-                        <div className="flex gap-2 mb-4">
-                          <button className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm">All</button>
-                          <button className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Your tools</button>
-                          <button className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">From community</button>
-                        </div>
-
-                        <div className="space-y-2">
-                          {stepTypes.map((stepType) => (
-                            <button
-                              key={stepType.id}
-                              onClick={() => addStep(stepType.id)}
-                              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-left border border-gray-100"
-                            >
-                              <div className={`w-8 h-8 ${stepType.color} rounded-lg flex items-center justify-center`}>
-                                <stepType.icon className="w-4 h-4 text-white" />
-                              </div>
-                              <div>
-                                <div className="text-sm font-medium text-gray-900">{stepType.label}</div>
-                                <div className="text-xs text-gray-600">{stepType.description}</div>
-                              </div>
-                              <div className="ml-auto">
-                                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">Verified</span>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {stepTypes.slice(0, 5).map((stepType) => (
-                  <button
-                    key={stepType.id}
-                    onClick={() => addStep(stepType.id)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm flex items-center gap-2"
-                  >
-                    <stepType.icon className="w-4 h-4" />
-                    {stepType.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Added Steps */}
-              {toolData.steps.map((step, index) => {
-                const StepIcon = getStepIcon(step.type);
-                const stepColor = getStepColor(step.type);
-                
-                return (
-                  <div key={step.id} className="bg-white border border-gray-200 rounded-xl p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3">
-                        <div className={`w-10 h-10 ${stepColor} rounded-lg flex items-center justify-center`}>
-                          <StepIcon className="w-5 h-5 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <input
-                            type="text"
-                            value={step.name}
-                            onChange={(e) => setToolData(prev => ({
-                              ...prev,
-                              steps: prev.steps.map(s => s.id === step.id ? { ...s, name: e.target.value } : s)
-                            }))}
-                            className="font-medium text-gray-900 bg-transparent border-none outline-none mb-1"
-                            placeholder="Step name"
-                          />
-                          <input
-                            type="text"
-                            value={step.description}
-                            onChange={(e) => setToolData(prev => ({
-                              ...prev,
-                              steps: prev.steps.map(s => s.id === step.id ? { ...s, description: e.target.value } : s)
-                            }))}
-                            className="text-sm text-gray-600 bg-transparent border-none outline-none w-full"
-                            placeholder="Step description"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">Verified</span>
-                        <button
-                          onClick={() => removeStep(step.id)}
-                          className="text-gray-400 hover:text-red-600 p-1"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
-    );
+  const getPlatformIcon = (platform: string) => {
+    switch (platform) {
+      case 'instagram':
+        return Instagram;
+      case 'linkedin':
+        return Linkedin;
+      case 'twitter':
+        return Twitter;
+      case 'facebook':
+        return Facebook;
+      case 'youtube':
+        return Youtube;
+      case 'tiktok':
+        return Video;
+      default:
+        return Globe;
+    }
   };
 
-  // Tool Library Component
-  const ToolLibrary = ({ onClose, onSelectTools }: { onClose: () => void; onSelectTools: (tools: AvailableTool[]) => void }) => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('All tools');
-    const [selectedTools, setSelectedTools] = useState<Set<string>>(new Set());
-
-    const categories = [
-      { id: 'All tools', label: 'All tools', icon: Folder },
-      { id: 'Trending', label: 'Trending', icon: TrendingUp },
-      { id: 'Your tools', label: 'Your tools', icon: User },
-      { id: 'Communications', label: 'Communications', icon: MessageSquare },
-      { id: 'CRM', label: 'CRM', icon: Users },
-      { id: 'Calendar', label: 'Calendar', icon: CalendarIcon },
-      { id: 'Data scraper', label: 'Data scraper', icon: Database },
-      { id: 'Handle files', label: 'Handle files', icon: FileText },
-      { id: 'Knowledge', label: 'Knowledge', icon: Brain }
-    ];
-
-    const appCategories = [
-      { id: 'Gmail', label: 'Gmail', icon: Mail, color: 'text-red-500' },
-      { id: 'Google Calendar', label: 'Google Calendar', icon: CalendarIcon, color: 'text-blue-500' },
-      { id: 'HubSpot', label: 'HubSpot', icon: Building, color: 'text-orange-500' },
-      { id: 'Outlook', label: 'Outlook', icon: Mail, color: 'text-blue-600' },
-      { id: 'LinkedIn', label: 'LinkedIn', icon: Linkedin, color: 'text-blue-700' },
-      { id: 'Notion', label: 'Notion', icon: FileText, color: 'text-gray-800' },
-      { id: 'Slack', label: 'Slack', icon: Slack, color: 'text-green-600' }
-    ];
-
-    const filteredTools = availableTools.filter(tool => {
-      const matchesSearch = tool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           tool.description.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      if (selectedCategory === 'All tools') return matchesSearch;
-      if (selectedCategory === 'Trending') return matchesSearch && tool.trending;
-      if (selectedCategory === 'Your tools') return matchesSearch && false; // No user tools for now
-      
-      return matchesSearch && tool.category === selectedCategory;
-    });
-
-    const toggleToolSelection = (toolId: string) => {
-      const newSelected = new Set(selectedTools);
-      if (newSelected.has(toolId)) {
-        newSelected.delete(toolId);
-      } else {
-        newSelected.add(toolId);
-      }
-      setSelectedTools(newSelected);
-    };
-
-    const handleAddTools = () => {
-      const toolsToAdd = availableTools.filter(tool => selectedTools.has(tool.id));
-      onSelectTools(toolsToAdd);
-      onClose();
-    };
-
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-      >
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-white rounded-2xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex"
-        >
-          {/* Left Sidebar */}
-          <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col">
-            {/* Header */}
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">Tools</h2>
-                <button
-                  onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600 p-1 rounded"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search 9,000+ tools..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                />
-              </div>
-              
-              <button 
-                onClick={() => {
-                  onClose();
-                  setShowNewToolBuilder(true);
-                }}
-                className="w-full mt-3 px-4 py-2 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium flex items-center justify-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                New tool
-              </button>
-            </div>
-
-            {/* Categories */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-4">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Tools</div>
-                <div className="space-y-1">
-                  {categories.map((category) => (
-                    <button
-                      key={category.id}
-                      onClick={() => setSelectedCategory(category.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                        selectedCategory === category.id
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      <category.icon className="w-4 h-4" />
-                      {category.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3 mt-6">By use case</div>
-                <div className="space-y-1">
-                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
-                    <MessageSquare className="w-4 h-4" />
-                    Communications
-                  </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
-                    <Users className="w-4 h-4" />
-                    CRM
-                  </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
-                    <CalendarIcon className="w-4 h-4" />
-                    Calendar
-                  </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
-                    <Database className="w-4 h-4" />
-                    Data scraper
-                  </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
-                    <FileText className="w-4 h-4" />
-                    Handle files
-                  </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
-                    <Brain className="w-4 h-4" />
-                    Knowledge
-                  </button>
-                </div>
-
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3 mt-6">By apps</div>
-                <div className="space-y-1">
-                  {appCategories.map((app) => (
-                    <button
-                      key={app.id}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      <app.icon className={`w-4 h-4 ${app.color}`} />
-                      {app.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="flex-1 flex flex-col">
-            {/* Header */}
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {selectedCategory === 'Trending' ? 'Trending' : selectedCategory}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {selectedCategory === 'Trending' 
-                      ? 'Popular tool templates from the community'
-                      : `Browse ${filteredTools.length} available tools`
-                    }
-                  </p>
-                </div>
-                {selectedTools.size > 0 && (
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-600">
-                      {selectedTools.size} tool{selectedTools.size !== 1 ? 's' : ''} selected
-                    </span>
-                    <button
-                      onClick={handleAddTools}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
-                    >
-                      <Check className="w-4 h-4" />
-                      Add {selectedTools.size} tool{selectedTools.size !== 1 ? 's' : ''}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Tools Grid */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="grid grid-cols-2 gap-4">
-                {filteredTools.map((tool) => (
-                  <div
-                    key={tool.id}
-                    className={`border rounded-xl p-4 cursor-pointer transition-all ${
-                      selectedTools.has(tool.id)
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                    }`}
-                    onClick={() => toggleToolSelection(tool.id)}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 ${tool.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                        <tool.icon className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-gray-900 text-sm">{tool.name}</h4>
-                          {selectedTools.has(tool.id) && (
-                            <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
-                              <Check className="w-3 h-3 text-white" />
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-600 mb-2 line-clamp-2">{tool.description}</p>
-                        <div className="text-xs text-gray-500">by {tool.provider}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {filteredTools.length === 0 && (
-                <div className="text-center py-12 text-gray-500">
-                  <Search className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="font-medium mb-1">No tools found</p>
-                  <p className="text-sm">Try adjusting your search or category filter</p>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="p-6 border-t border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={onClose}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                {selectedTools.size > 0 && (
-                  <button
-                    onClick={handleAddTools}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                  >
-                    Add {selectedTools.size} tool{selectedTools.size !== 1 ? 's' : ''}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
-    );
+  const getPlatformColor = (platform: string) => {
+    switch (platform) {
+      case 'instagram':
+        return 'bg-gradient-to-r from-purple-500 to-pink-500';
+      case 'linkedin':
+        return 'bg-blue-600';
+      case 'twitter':
+        return 'bg-sky-500';
+      case 'facebook':
+        return 'bg-blue-700';
+      case 'youtube':
+        return 'bg-red-600';
+      case 'tiktok':
+        return 'bg-black';
+      default:
+        return 'bg-gray-500';
+    }
   };
 
-  // Tool Wizard Component
-  const ToolWizard = ({ tool, onClose }: { tool: Tool; onClose: () => void }) => {
+  // Social Media Import Wizard Component
+  const SocialMediaImportWizard = ({ onClose }: { onClose: () => void }) => {
     const [currentStep, setCurrentStep] = useState(0);
-    const [toolConfig, setToolConfig] = useState({
-      description: tool.description,
-      inputs: tool.inputs
+    const [selectedAccount, setSelectedAccount] = useState<SocialMediaAccount | null>(null);
+    const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([]);
+    const [importSettings, setImportSettings] = useState({
+      dateRange: 'last_30_days',
+      includeComments: false,
+      includeMetrics: true,
+      maxPosts: 100
     });
 
     const steps = [
-      { id: 'description', title: 'Tool Description', icon: MessageSquare },
-      { id: 'inputs', title: 'Configure Inputs', icon: Settings },
-      { id: 'review', title: 'Review & Save', icon: CheckCircle }
+      { id: 'account', title: 'Select Account', icon: User },
+      { id: 'content', title: 'Choose Content', icon: FileText },
+      { id: 'settings', title: 'Import Settings', icon: Settings },
+      { id: 'review', title: 'Review & Import', icon: CheckCircle }
     ];
+
+    const getContentOptions = (platform: string) => {
+      switch (platform) {
+        case 'instagram':
+          return [
+            { id: 'posts', label: 'All Posts', description: 'Import all your Instagram posts', icon: Image },
+            { id: 'stories', label: 'Story Highlights', description: 'Import saved story highlights', icon: Circle },
+            { id: 'reels', label: 'Reels', description: 'Import your Reels content', icon: Video },
+            { id: 'captions', label: 'Captions Only', description: 'Import just the text captions', icon: Type }
+          ];
+        case 'linkedin':
+          return [
+            { id: 'posts', label: 'Posts', description: 'Import your LinkedIn posts', icon: FileText },
+            { id: 'articles', label: 'Articles', description: 'Import published articles', icon: BookOpen },
+            { id: 'profile', label: 'Profile Info', description: 'Import profile summary and experience', icon: User },
+            { id: 'comments', label: 'Comments', description: 'Import your comments on posts', icon: MessageSquare }
+          ];
+        case 'twitter':
+          return [
+            { id: 'tweets', label: 'Tweets', description: 'Import your tweets', icon: Twitter },
+            { id: 'threads', label: 'Threads', description: 'Import tweet threads', icon: Layers },
+            { id: 'replies', label: 'Replies', description: 'Import your replies to others', icon: MessageSquare },
+            { id: 'likes', label: 'Liked Tweets', description: 'Import tweets you liked', icon: Heart }
+          ];
+        case 'youtube':
+          return [
+            { id: 'videos', label: 'Videos', description: 'Import video titles and descriptions', icon: Video },
+            { id: 'transcripts', label: 'Transcripts', description: 'Import video transcripts', icon: FileText },
+            { id: 'comments', label: 'Comments', description: 'Import video comments', icon: MessageSquare },
+            { id: 'playlists', label: 'Playlists', description: 'Import playlist information', icon: FolderOpen }
+          ];
+        default:
+          return [];
+      }
+    };
 
     const renderStepContent = () => {
       switch (currentStep) {
         case 0:
           return (
             <div className="space-y-6">
-              <div className="text-center">
-                <div className={`w-16 h-16 ${tool.color} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
-                  <tool.icon className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{tool.name}</h3>
-                <p className="text-gray-600">{tool.category}</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  How should the agent use this tool?
-                </label>
-                <textarea
-                  value={toolConfig.description}
-                  onChange={(e) => setToolConfig(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                  rows={4}
-                  placeholder="Describe how the agent should use this tool..."
-                />
-              </div>
-            </div>
-          );
-
-        case 1:
-          return (
-            <div className="space-y-6">
               <div className="text-center mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Configure Tool Inputs</h3>
-                <p className="text-gray-600">Set up the data this tool needs to work</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Social Media Account</h3>
+                <p className="text-gray-600">Choose which account you want to import content from</p>
               </div>
 
-              <div className="space-y-4">
-                {toolConfig.inputs.map((input, index) => {
-                  const InputIcon = getInputIcon(input.type);
+              <div className="space-y-3">
+                {socialMediaAccounts.map((account) => {
+                  const PlatformIcon = getPlatformIcon(account.platform);
+                  const platformColor = getPlatformColor(account.platform);
+                  
                   return (
-                    <div key={input.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                      <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center border border-gray-200">
-                          <InputIcon className="w-5 h-5 text-gray-600" />
+                    <div
+                      key={account.id}
+                      onClick={() => account.isConnected && setSelectedAccount(account)}
+                      className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                        selectedAccount?.id === account.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : account.isConnected
+                          ? 'border-gray-200 hover:border-gray-300'
+                          : 'border-gray-100 opacity-50 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 ${platformColor} rounded-xl flex items-center justify-center`}>
+                          <PlatformIcon className="w-6 h-6 text-white" />
                         </div>
                         
-                        <div className="flex-1 space-y-3">
-                          <div>
-                            <h4 className="font-medium text-gray-900">{input.name}</h4>
-                            <p className="text-sm text-gray-600 mt-1">{input.description}</p>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-medium text-gray-900">{account.displayName}</h4>
+                            {account.isConnected && (
+                              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Connected</span>
+                            )}
                           </div>
-
-                          {input.type === 'select' && input.options && (
-                            <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                              <option value="">Select an option...</option>
-                              {input.options.map((option) => (
-                                <option key={option} value={option}>{option}</option>
-                              ))}
-                            </select>
+                          <p className="text-sm text-gray-600">{account.username}</p>
+                          {account.followerCount && (
+                            <p className="text-xs text-gray-500">{account.followerCount.toLocaleString()} followers</p>
                           )}
-
-                          {input.type !== 'select' && (
-                            <input
-                              type={input.type === 'number' ? 'number' : input.type === 'email' ? 'email' : input.type === 'url' ? 'url' : 'text'}
-                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              placeholder={`Enter ${input.name.toLowerCase()}...`}
-                              defaultValue={input.defaultValue || ''}
-                            />
-                          )}
-
-                          <div className="flex items-center justify-between">
-                            <label className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={input.letAgentDecide}
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                              />
-                              <span className="text-sm text-gray-700">Let agent decide</span>
-                            </label>
-                            <label className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={input.required}
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                              />
-                              <span className="text-sm text-gray-700">Required</span>
-                            </label>
-                          </div>
                         </div>
+
+                        {!account.isConnected && (
+                          <button className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">
+                            Connect
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -1240,39 +481,150 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
             </div>
           );
 
+        case 1:
+          return (
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Choose Content to Import</h3>
+                <p className="text-gray-600">Select what type of content you want to import from {selectedAccount?.displayName}</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {getContentOptions(selectedAccount?.platform || '').map((option) => (
+                  <div
+                    key={option.id}
+                    onClick={() => {
+                      setSelectedContentTypes(prev => 
+                        prev.includes(option.id)
+                          ? prev.filter(id => id !== option.id)
+                          : [...prev, option.id]
+                      );
+                    }}
+                    className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                      selectedContentTypes.includes(option.id)
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <option.icon className="w-5 h-5 text-gray-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-1">{option.label}</h4>
+                        <p className="text-sm text-gray-600">{option.description}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+
         case 2:
+          return (
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Import Settings</h3>
+                <p className="text-gray-600">Configure how you want to import the content</p>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Date Range</label>
+                  <select
+                    value={importSettings.dateRange}
+                    onChange={(e) => setImportSettings(prev => ({ ...prev, dateRange: e.target.value }))}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="last_7_days">Last 7 days</option>
+                    <option value="last_30_days">Last 30 days</option>
+                    <option value="last_90_days">Last 90 days</option>
+                    <option value="last_year">Last year</option>
+                    <option value="all_time">All time</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Maximum Posts</label>
+                  <input
+                    type="number"
+                    value={importSettings.maxPosts}
+                    onChange={(e) => setImportSettings(prev => ({ ...prev, maxPosts: parseInt(e.target.value) }))}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="100"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={importSettings.includeComments}
+                      onChange={(e) => setImportSettings(prev => ({ ...prev, includeComments: e.target.checked }))}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Include comments and replies</span>
+                  </label>
+
+                  <label className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={importSettings.includeMetrics}
+                      onChange={(e) => setImportSettings(prev => ({ ...prev, includeMetrics: e.target.checked }))}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Include engagement metrics (likes, shares, etc.)</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          );
+
+        case 3:
           return (
             <div className="space-y-6">
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <CheckCircle className="w-8 h-8 text-green-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Review Configuration</h3>
-                <p className="text-gray-600">Confirm your tool setup before saving</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Review Import Settings</h3>
+                <p className="text-gray-600">Confirm your settings before importing</p>
               </div>
 
               <div className="bg-gray-50 rounded-xl p-6 space-y-4">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Tool Description</h4>
-                  <p className="text-gray-700 text-sm">{toolConfig.description}</p>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 ${getPlatformColor(selectedAccount?.platform || '')} rounded-lg flex items-center justify-center`}>
+                    {selectedAccount && React.createElement(getPlatformIcon(selectedAccount.platform), { className: "w-5 h-5 text-white" })}
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900">{selectedAccount?.displayName}</h4>
+                    <p className="text-sm text-gray-600">{selectedAccount?.username}</p>
+                  </div>
                 </div>
-                
+
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Configured Inputs ({toolConfig.inputs.length})</h4>
-                  <div className="space-y-2">
-                    {toolConfig.inputs.map((input) => (
-                      <div key={input.id} className="flex items-center justify-between py-2 px-3 bg-white rounded-lg border border-gray-200">
-                        <span className="text-sm font-medium text-gray-900">{input.name}</span>
-                        <div className="flex items-center gap-2">
-                          {input.letAgentDecide && (
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Auto</span>
-                          )}
-                          {input.required && (
-                            <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Required</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                  <h5 className="font-medium text-gray-900 mb-2">Content Types ({selectedContentTypes.length})</h5>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedContentTypes.map((type) => {
+                      const option = getContentOptions(selectedAccount?.platform || '').find(o => o.id === type);
+                      return (
+                        <span key={type} className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">
+                          {option?.label}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-900">Date Range:</span>
+                    <p className="text-gray-600">{importSettings.dateRange.replace('_', ' ')}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-900">Max Posts:</span>
+                    <p className="text-gray-600">{importSettings.maxPosts}</p>
                   </div>
                 </div>
               </div>
@@ -1305,7 +657,7 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm">Back to Tools</span>
+                <span className="text-sm">Back to Knowledge</span>
               </button>
               <button
                 onClick={onClose}
@@ -1363,19 +715,32 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
                 {currentStep < steps.length - 1 ? (
                   <button
                     onClick={() => setCurrentStep(currentStep + 1)}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    disabled={
+                      (currentStep === 0 && !selectedAccount) ||
+                      (currentStep === 1 && selectedContentTypes.length === 0)
+                    }
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next
                   </button>
                 ) : (
                   <button
                     onClick={() => {
-                      // Save tool configuration
+                      // Handle import logic here
+                      const newKnowledgeItem: KnowledgeItem = {
+                        id: `social_${Date.now()}`,
+                        name: `${selectedAccount?.platform} - ${selectedContentTypes.join(', ')}`,
+                        type: 'social_media',
+                        source: selectedAccount?.username,
+                        size: `${selectedContentTypes.length} content types`,
+                        createdAt: new Date().toISOString().split('T')[0]
+                      };
+                      setKnowledgeItems(prev => [...prev, newKnowledgeItem]);
                       onClose();
                     }}
                     className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                   >
-                    Save Tool
+                    Import Content
                   </button>
                 )}
               </div>
@@ -1383,6 +748,789 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
           </div>
         </motion.div>
       </motion.div>
+    );
+  };
+
+  // Tool Library Modal Component
+  const ToolLibraryModal = ({ onClose }: { onClose: () => void }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('all');
+
+    const availableTools = [
+      {
+        id: 'web_scraper',
+        name: 'Web Scraper',
+        description: 'Extract data from web pages',
+        type: 'web_scraper' as const,
+        category: 'Data Processing',
+        icon: Globe,
+        verified: true
+      },
+      {
+        id: 'search_tool',
+        name: 'Search Tool',
+        description: 'Search the web for information',
+        type: 'search_tool' as const,
+        category: 'Research',
+        icon: Search,
+        verified: true
+      },
+      {
+        id: 'api_call',
+        name: 'API Call',
+        description: 'Make HTTP requests to external APIs',
+        type: 'api_call' as const,
+        category: 'Integration',
+        icon: Link,
+        verified: true
+      },
+      {
+        id: 'data_extractor',
+        name: 'Data Extractor',
+        description: 'Extract and process structured data',
+        type: 'data_extractor' as const,
+        category: 'Data Processing',
+        icon: Database,
+        verified: true
+      },
+      {
+        id: 'code_interpreter',
+        name: 'Code Interpreter',
+        description: 'Execute Python code for data analysis',
+        type: 'code_interpreter' as const,
+        category: 'Development',
+        icon: Code,
+        verified: true
+      },
+      {
+        id: 'email_sender',
+        name: 'Email Sender',
+        description: 'Send emails via SMTP or API',
+        type: 'email_sender' as const,
+        category: 'Communication',
+        icon: Mail,
+        verified: true
+      }
+    ];
+
+    const categories = [
+      { id: 'all', label: 'All Tools' },
+      { id: 'trending', label: 'Trending' },
+      { id: 'your_tools', label: 'Your Tools' },
+      { id: 'from_community', label: 'From Community' }
+    ];
+
+    const filteredTools = availableTools.filter(tool => {
+      const matchesSearch = tool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           tool.description.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesSearch;
+    });
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[85vh] overflow-hidden"
+        >
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Tools</h2>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Search */}
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search 9,000+ tools..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {/* New Tool Button */}
+            <button
+              onClick={() => {
+                onClose();
+                setShowNewToolBuilder(true);
+              }}
+              className="w-full px-4 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2 mb-4"
+            >
+              <Plus className="w-4 h-4" />
+              New tool
+            </button>
+
+            {/* Categories */}
+            <div className="flex gap-1">
+              {categories.map(category => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    selectedCategory === category.id
+                      ? 'bg-gray-900 text-white'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  {category.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 overflow-y-auto max-h-[calc(85vh-200px)]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredTools.map((tool) => (
+                <div
+                  key={tool.id}
+                  onClick={() => {
+                    // Add tool to agent
+                    onClose();
+                  }}
+                  className="p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-white transition-colors">
+                      <tool.icon className="w-5 h-5 text-gray-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-medium text-gray-900">{tool.name}</h4>
+                        {tool.verified && (
+                          <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+                            Verified
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">{tool.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    );
+  };
+
+  // New Tool Builder Component
+  const NewToolBuilder = ({ onClose }: { onClose: () => void }) => {
+    const [toolName, setToolName] = useState('');
+    const [toolDescription, setToolDescription] = useState('');
+    const [inputs, setInputs] = useState<any[]>([]);
+    const [steps, setSteps] = useState<any[]>([]);
+    const [showStepSearch, setShowStepSearch] = useState(false);
+
+    const inputTypes = [
+      { id: 'text', label: 'Text', icon: Type },
+      { id: 'long_text', label: 'Long text', icon: FileText },
+      { id: 'number', label: 'Number', icon: Hash },
+      { id: 'json', label: 'JSON', icon: Code },
+      { id: 'file_url', label: 'File to URL', icon: Link },
+      { id: 'table', label: 'Table', icon: Table }
+    ];
+
+    const moreInputTypes = [
+      { id: 'checkbox', label: 'Checkbox', icon: CheckCircle },
+      { id: 'text_list', label: 'Text list', icon: FileText },
+      { id: 'json_list', label: 'List of JSONs', icon: Code },
+      { id: 'file_text', label: 'File to text', icon: FileText },
+      { id: 'multiple_files', label: 'Multiple files to URLs', icon: Link },
+      { id: 'api_key', label: 'API key input', icon: Key },
+      { id: 'oauth', label: 'OAuth account', icon: User }
+    ];
+
+    const stepTypes = [
+      { id: 'llm', label: 'LLM', icon: Brain, color: 'bg-purple-500' },
+      { id: 'knowledge', label: 'Knowledge', icon: BookOpen, color: 'bg-green-500' },
+      { id: 'google', label: 'Google', icon: Search, color: 'bg-blue-500' },
+      { id: 'api', label: 'API', icon: Link, color: 'bg-orange-500' },
+      { id: 'python', label: 'Python', icon: Code, color: 'bg-yellow-500' },
+      { id: 'javascript', label: 'Javascript', icon: Code, color: 'bg-indigo-500' }
+    ];
+
+    const availableSteps = [
+      { id: 'api', name: 'API', description: 'Run an API request', verified: true, icon: Link },
+      { id: 'extract_website', name: 'Extract website content', description: 'Scrape and access website content from a link or URL', verified: true, icon: Globe },
+      { id: 'google_search', name: 'Google Search', description: 'Search the web for keywords using Google and get the top website results', verified: true, icon: Search },
+      { id: 'javascript', name: 'Javascript Code', description: 'Run Javascript code', verified: true, icon: Code },
+      { id: 'llm', name: 'LLM', description: 'Use a large language model such as GPT', verified: true, icon: Brain },
+      { id: 'llm_vision', name: 'LLM Vision', description: 'Use a large multimodal model such as GPT4o or Gemini 1.5 Pro', verified: true, icon: Eye },
+      { id: 'note', name: 'Note', description: 'Insert markdown notes', verified: true, icon: FileText },
+      { id: 'python', name: 'Python Code', description: 'Run Python code', verified: true, icon: Code }
+    ];
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-gray-50 z-50"
+      >
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={onClose}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="text-sm">Tools</span>
+              </button>
+              <span className="text-gray-400">/</span>
+              <span className="text-gray-600">Untitled tool</span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">Unsaved</span>
+              <button className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium">
+                Save changes
+              </button>
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2">
+                <Play className="w-4 h-4" />
+                Run tool
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="max-w-4xl mx-auto p-6 space-y-8">
+          {/* Title and Description */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                <Plus className="w-6 h-6 text-gray-600" />
+              </div>
+              <input
+                type="text"
+                value={toolName}
+                onChange={(e) => setToolName(e.target.value)}
+                placeholder="Type title..."
+                className="text-2xl font-semibold text-gray-900 bg-transparent border-none outline-none flex-1"
+              />
+            </div>
+            <input
+              type="text"
+              value={toolDescription}
+              onChange={(e) => setToolDescription(e.target.value)}
+              placeholder="Type short description..."
+              className="text-gray-600 bg-transparent border-none outline-none w-full"
+            />
+          </div>
+
+          {/* Inputs Section */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Inputs</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  Configure
+                </button>
+                <button className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium flex items-center gap-2">
+                  <Bot className="w-4 h-4" />
+                  For Agent
+                </button>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-4">Add type of input:</p>
+              <div className="flex flex-wrap gap-2">
+                {inputTypes.map((type) => (
+                  <button
+                    key={type.id}
+                    onClick={() => {
+                      const newInput = {
+                        id: `input_${Date.now()}`,
+                        type: type.id,
+                        label: type.label,
+                        name: '',
+                        description: '',
+                        required: false
+                      };
+                      setInputs(prev => [...prev, newInput]);
+                    }}
+                    className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium flex items-center gap-2"
+                  >
+                    <type.icon className="w-4 h-4" />
+                    {type.label}
+                  </button>
+                ))}
+                <div className="relative">
+                  <button className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
+                    More
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {inputs.length > 0 && (
+              <div className="space-y-3">
+                {inputs.map((input) => (
+                  <div key={input.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium text-gray-900">{input.label}</h4>
+                      <button
+                        onClick={() => setInputs(prev => prev.filter(i => i.id !== input.id))}
+                        className="text-red-600 hover:text-red-700 p-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        placeholder="Input name"
+                        className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Description"
+                        className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Steps Section */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Layers className="w-5 h-5 text-blue-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Steps</h3>
+            </div>
+            
+            <p className="text-gray-600 text-sm mb-6">
+              Define the logic of your tool. Chain together LLM prompts, call APIs, run code and more.
+            </p>
+
+            <div className="flex flex-wrap gap-2 mb-6">
+              <button
+                onClick={() => setShowStepSearch(true)}
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Step
+              </button>
+              {stepTypes.map((type) => (
+                <button
+                  key={type.id}
+                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium flex items-center gap-2"
+                >
+                  <type.icon className="w-4 h-4" />
+                  {type.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Step Search Modal */}
+            {showStepSearch && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+                  <div className="p-4 border-b border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Add Step</h3>
+                      <button
+                        onClick={() => setShowStepSearch(false)}
+                        className="text-gray-400 hover:text-gray-600 p-1"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        placeholder="Search 9,000+ tool steps..."
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="flex gap-1 mt-4">
+                      <button className="px-3 py-1.5 bg-gray-900 text-white rounded-lg text-sm">All</button>
+                      <button className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Your tools</button>
+                      <button className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">From community</button>
+                    </div>
+                  </div>
+                  <div className="p-4 overflow-y-auto max-h-[60vh]">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {availableSteps.map((step) => (
+                        <div
+                          key={step.id}
+                          onClick={() => {
+                            setSteps(prev => [...prev, { ...step, id: `step_${Date.now()}` }]);
+                            setShowStepSearch(false);
+                          }}
+                          className="p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                              <step.icon className="w-4 h-4 text-gray-600" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-medium text-gray-900 text-sm">{step.name}</h4>
+                                {step.verified && (
+                                  <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded">
+                                    Verified
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-600">{step.description}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {steps.length > 0 && (
+              <div className="space-y-3">
+                {steps.map((step) => (
+                  <div key={step.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-gray-200">
+                          <step.icon className="w-4 h-4 text-gray-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900">{step.name}</h4>
+                          <p className="text-sm text-gray-600">{step.description}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setSteps(prev => prev.filter(s => s.id !== step.id))}
+                        className="text-red-600 hover:text-red-700 p-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
+  // Knowledge Tab Component
+  const KnowledgeTab = () => {
+    const [knowledgeText, setKnowledgeText] = useState('');
+    const [activeKnowledgeTab, setActiveKnowledgeTab] = useState<'upload' | 'social_media'>('upload');
+
+    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const files = event.target.files;
+      if (files) {
+        Array.from(files).forEach(file => {
+          const newItem: KnowledgeItem = {
+            id: `file_${Date.now()}_${Math.random()}`,
+            name: file.name,
+            type: 'file',
+            source: 'Upload',
+            size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
+            createdAt: new Date().toISOString().split('T')[0]
+          };
+          setKnowledgeItems(prev => [...prev, newItem]);
+        });
+      }
+    };
+
+    const addTextKnowledge = () => {
+      if (knowledgeText.trim()) {
+        const newItem: KnowledgeItem = {
+          id: `text_${Date.now()}`,
+          name: 'Custom Text Knowledge',
+          type: 'text',
+          content: knowledgeText,
+          size: `${knowledgeText.length} chars`,
+          createdAt: new Date().toISOString().split('T')[0]
+        };
+        setKnowledgeItems(prev => [...prev, newItem]);
+        setKnowledgeText('');
+      }
+    };
+
+    const getKnowledgeIcon = (type: string) => {
+      switch (type) {
+        case 'file':
+          return FileText;
+        case 'text':
+          return Type;
+        case 'website':
+          return Globe;
+        case 'social_media':
+          return Users;
+        case 'table':
+          return Table;
+        default:
+          return FileText;
+      }
+    };
+
+    const getKnowledgeColor = (type: string) => {
+      switch (type) {
+        case 'file':
+          return 'bg-blue-100 text-blue-600';
+        case 'text':
+          return 'bg-green-100 text-green-600';
+        case 'website':
+          return 'bg-purple-100 text-purple-600';
+        case 'social_media':
+          return 'bg-orange-100 text-orange-600';
+        case 'table':
+          return 'bg-yellow-100 text-yellow-600';
+        default:
+          return 'bg-gray-100 text-gray-600';
+      }
+    };
+
+    return (
+      <div className="space-y-8">
+        {/* Header */}
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Knowledge</h2>
+          <p className="text-gray-600">Import data to teach your agents about new topics.</p>
+        </div>
+
+        {/* Knowledge Tabs */}
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8">
+            <button
+              onClick={() => setActiveKnowledgeTab('upload')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeKnowledgeTab === 'upload'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Upload Knowledge
+            </button>
+            <button
+              onClick={() => setActiveKnowledgeTab('social_media')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeKnowledgeTab === 'social_media'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Import Social Media Content
+            </button>
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        {activeKnowledgeTab === 'upload' && (
+          <div className="space-y-8">
+            {/* File Upload Section */}
+            <div className="bg-white rounded-xl border border-gray-200 p-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Upload knowledge</h3>
+              
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-gray-400 transition-colors">
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="file-upload"
+                  accept=".csv,.json,.pdf,.xlsx,.xls,.txt,.md,.docx,.pptx"
+                />
+                <label htmlFor="file-upload" className="cursor-pointer">
+                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-lg text-gray-600 mb-2">
+                    Drag & drop or <span className="text-blue-600 hover:text-blue-700">choose files</span> to upload.
+                  </p>
+                  <p className="text-sm text-gray-500 mb-1">
+                    Supported formats: .csv, .json, .pdf, .xlsx, .xls, .txt, .md, .docx, .pptx.
+                  </p>
+                  <p className="text-sm text-gray-500">Max 5 files per upload.</p>
+                </label>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div>
+              <p className="text-gray-600 mb-4">or</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <button className="p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all text-left">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Database className="w-5 h-5 text-gray-600" />
+                    <span className="font-medium text-gray-900">Add existing knowledge</span>
+                  </div>
+                </button>
+                
+                <button className="p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all text-left">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Globe className="w-5 h-5 text-gray-600" />
+                    <span className="font-medium text-gray-900">Import website</span>
+                  </div>
+                </button>
+                
+                <button className="p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all text-left">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Table className="w-5 h-5 text-gray-600" />
+                    <span className="font-medium text-gray-900">Blank table</span>
+                  </div>
+                </button>
+                
+                <button className="p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all text-left">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Type className="w-5 h-5 text-gray-600" />
+                    <span className="font-medium text-gray-900">Markdown/Text</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Text Editor Section */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Text Knowledge</h3>
+              <textarea
+                value={knowledgeText}
+                onChange={(e) => setKnowledgeText(e.target.value)}
+                placeholder="Enter your knowledge content here..."
+                className="w-full h-40 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              />
+              <div className="flex justify-end mt-4">
+                <button
+                  onClick={addTextKnowledge}
+                  disabled={!knowledgeText.trim()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Add Knowledge
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeKnowledgeTab === 'social_media' && (
+          <div className="space-y-8">
+            {/* Social Media Import Section */}
+            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Import Social Media Content</h3>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                Import your social media posts, profiles, and content to train your AI agent with your brand voice and style.
+              </p>
+              <button
+                onClick={() => setShowSocialMediaImport(true)}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Start Import
+              </button>
+            </div>
+
+            {/* Connected Accounts Preview */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Connected Accounts</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {socialMediaAccounts.filter(account => account.isConnected).map((account) => {
+                  const PlatformIcon = getPlatformIcon(account.platform);
+                  const platformColor = getPlatformColor(account.platform);
+                  
+                  return (
+                    <div key={account.id} className="p-4 border border-gray-200 rounded-xl">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className={`w-10 h-10 ${platformColor} rounded-lg flex items-center justify-center`}>
+                          <PlatformIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900">{account.displayName}</h4>
+                          <p className="text-sm text-gray-600">{account.username}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowSocialMediaImport(true)}
+                        className="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                      >
+                        Import Content
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Existing Knowledge Items */}
+        {knowledgeItems.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Knowledge Base ({knowledgeItems.length})</h3>
+            <div className="space-y-3">
+              {knowledgeItems.map((item) => {
+                const ItemIcon = getKnowledgeIcon(item.type);
+                const itemColor = getKnowledgeColor(item.type);
+                
+                return (
+                  <div key={item.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 ${itemColor} rounded-lg flex items-center justify-center`}>
+                        <ItemIcon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">{item.name}</h4>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <span>{item.source || item.type}</span>
+                          <span>•</span>
+                          <span>{item.size}</span>
+                          <span>•</span>
+                          <span>{item.createdAt}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button className="p-2 text-gray-400 hover:text-gray-600 rounded">
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button className="p-2 text-gray-400 hover:text-gray-600 rounded">
+                        <Download className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setKnowledgeItems(prev => prev.filter(i => i.id !== item.id))}
+                        className="p-2 text-red-400 hover:text-red-600 rounded"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -1453,7 +1601,7 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
           ))}
 
           {/* Add New Tool Card */}
-          <div 
+          <div
             onClick={() => setShowToolLibrary(true)}
             className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-gray-400 transition-colors cursor-pointer"
           >
@@ -1494,20 +1642,14 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
     switch (activeTab) {
       case 'tools':
         return <ToolsTab />;
+      case 'knowledge':
+        return <KnowledgeTab />;
       case 'prompt':
         return (
           <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
             <Brain className="w-16 h-16 text-purple-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Prompt Configuration</h3>
             <p className="text-gray-600">Configure your agent's personality and instructions.</p>
-          </div>
-        );
-      case 'knowledge':
-        return (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-            <FileText className="w-16 h-16 text-green-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Knowledge Base</h3>
-            <p className="text-gray-600">Upload documents and data sources for your agent.</p>
           </div>
         );
       case 'triggers':
@@ -1618,29 +1760,7 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
         </AnimatePresence>
       </div>
 
-      {/* New Tool Builder Modal */}
-      <AnimatePresence>
-        {showNewToolBuilder && (
-          <NewToolBuilder
-            onClose={() => setShowNewToolBuilder(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Tool Library Modal */}
-      <AnimatePresence>
-        {showToolLibrary && (
-          <ToolLibrary
-            onClose={() => setShowToolLibrary(false)}
-            onSelectTools={(tools) => {
-              // Handle adding selected tools
-              console.log('Selected tools:', tools);
-            }}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Tool Wizard Modal */}
+      {/* Modals */}
       <AnimatePresence>
         {showToolWizard && selectedTool && (
           <ToolWizard
@@ -1649,6 +1769,24 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
               setShowToolWizard(false);
               setSelectedTool(null);
             }}
+          />
+        )}
+        
+        {showToolLibrary && (
+          <ToolLibraryModal
+            onClose={() => setShowToolLibrary(false)}
+          />
+        )}
+        
+        {showNewToolBuilder && (
+          <NewToolBuilder
+            onClose={() => setShowNewToolBuilder(false)}
+          />
+        )}
+        
+        {showSocialMediaImport && (
+          <SocialMediaImportWizard
+            onClose={() => setShowSocialMediaImport(false)}
           />
         )}
       </AnimatePresence>
