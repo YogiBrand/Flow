@@ -33,7 +33,7 @@ const InfluenceFlowDashboard: React.FC = () => {
   // Mock data - replace with actual data fetching
   const workflows: MessagingWorkflow[] = [
     {
-      id: 'wf1',
+      id: '550e8400-e29b-41d4-a716-446655440001',
       name: 'Instagram Welcome Sequence',
       description: 'Automated welcome message for new Instagram followers',
       steps: [],
@@ -45,7 +45,7 @@ const InfluenceFlowDashboard: React.FC = () => {
       updatedAt: new Date().toISOString()
     },
     {
-      id: 'wf2',
+      id: '550e8400-e29b-41d4-a716-446655440002',
       name: 'Email Nurture Campaign',
       description: 'Multi-step email sequence for lead nurturing',
       steps: [],
@@ -60,7 +60,7 @@ const InfluenceFlowDashboard: React.FC = () => {
 
   const agents: AIAgent[] = [
     {
-      id: 'agent1',
+      id: '550e8400-e29b-41d4-a716-446655440003',
       name: 'Content Assistant',
       description: 'AI agent for content creation and optimization',
       purpose: 'Help create engaging social media content',
