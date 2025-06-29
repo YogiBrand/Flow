@@ -18,12 +18,14 @@ import {
 } from 'lucide-react';
 import MessagingWorkflowBuilder from './MessagingWorkflowBuilder';
 import AIAgentBuilder from './AIAgentBuilder';
+import AIAgentBuilderNew from './AIAgentBuilderNew';
 import { MessagingWorkflow, AIAgent } from '../../types/influenceFlow';
 
 const InfluenceFlowDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'workflows' | 'agents' | 'analytics'>('workflows');
   const [showWorkflowBuilder, setShowWorkflowBuilder] = useState(false);
   const [showAgentBuilder, setShowAgentBuilder] = useState(false);
+  const [showNewAgentBuilder, setShowNewAgentBuilder] = useState(false);
   const [selectedWorkflow, setSelectedWorkflow] = useState<MessagingWorkflow | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<AIAgent | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -135,6 +137,18 @@ const InfluenceFlowDashboard: React.FC = () => {
     );
   }
 
+  if (showNewAgentBuilder) {
+    return (
+      <AIAgentBuilderNew
+        agent={selectedAgent}
+        onBack={() => {
+          setShowNewAgentBuilder(false);
+          setSelectedAgent(null);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -153,7 +167,7 @@ const InfluenceFlowDashboard: React.FC = () => {
               New Workflow
             </button>
             <button
-              onClick={() => setShowAgentBuilder(true)}
+              onClick={() => setShowNewAgentBuilder(true)}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center gap-2"
             >
               <Bot className="w-4 h-4" />
@@ -245,7 +259,7 @@ const InfluenceFlowDashboard: React.FC = () => {
             agents={agents}
             onEditAgent={(agent) => {
               setSelectedAgent(agent);
-              setShowAgentBuilder(true);
+              setShowNewAgentBuilder(true);
             }}
           />
         )}
