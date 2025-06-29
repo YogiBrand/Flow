@@ -113,6 +113,173 @@ const TextKnowledgeWizard: React.FC<{
   );
 };
 
+// URL Import Wizard Component
+const UrlImportWizard: React.FC<{
+  onAddKnowledge: (title: string, url: string) => void;
+  onCancel: () => void;
+}> = ({ onAddKnowledge, onCancel }) => {
+  const [title, setTitle] = useState('');
+  const [url, setUrl] = useState('');
+  const [isBatch, setIsBatch] = useState(false);
+  const [urls, setUrls] = useState('');
+
+  const handleSubmit = () => {
+    if (isBatch) {
+      // Handle batch URLs
+      const urlList = urls.split('\n').filter(u => u.trim());
+      if (urlList.length > 0) {
+        // For simplicity, we'll just use the first URL for now
+        onAddKnowledge(title || 'Batch URLs', urlList[0]);
+      }
+    } else {
+      // Handle single URL
+      if (title.trim() && url.trim()) {
+        onAddKnowledge(title.trim(), url.trim());
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4 mb-4">
+        <button
+          onClick={() => setIsBatch(false)}
+          className={`px-4 py-2 rounded-lg ${!isBatch ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'}`}
+        >
+          Single URL
+        </button>
+        <button
+          onClick={() => setIsBatch(true)}
+          className={`px-4 py-2 rounded-lg ${isBatch ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'}`}
+        >
+          Batch Import
+        </button>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Title
+        </label>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="Enter a title for this knowledge..."
+        />
+      </div>
+
+      {isBatch ? (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            URLs (one per line)
+          </label>
+          <textarea
+            value={urls}
+            onChange={(e) => setUrls(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[200px]"
+            placeholder="https://example.com/page1&#10;https://example.com/page2&#10;https://example.com/page3"
+          />
+        </div>
+      ) : (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            URL
+          </label>
+          <input
+            type="url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="https://example.com/page"
+          />
+        </div>
+      )}
+
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={isBatch ? !urls.trim() : (!title.trim() || !url.trim())}
+          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          Import URL{isBatch ? 's' : ''}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Social Media Import Wizard Component
+const SocialMediaImportWizard: React.FC<{
+  onAddKnowledge: (platform: string, handle: string) => void;
+  onCancel: () => void;
+}> = ({ onAddKnowledge, onCancel }) => {
+  const [platform, setPlatform] = useState('instagram');
+  const [handle, setHandle] = useState('');
+
+  const handleSubmit = () => {
+    if (handle.trim()) {
+      onAddKnowledge(platform, handle.trim());
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Social Media Platform
+        </label>
+        <select
+          value={platform}
+          onChange={(e) => setPlatform(e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        >
+          <option value="instagram">Instagram</option>
+          <option value="twitter">Twitter</option>
+          <option value="linkedin">LinkedIn</option>
+          <option value="youtube">YouTube</option>
+          <option value="tiktok">TikTok</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Username/Handle
+        </label>
+        <input
+          type="text"
+          value={handle}
+          onChange={(e) => setHandle(e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder={`Enter ${platform} username`}
+        />
+      </div>
+
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={!handle.trim()}
+          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          Import Content
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBack }) => {
   const { agent, loading } = useAgentData(agentId || '');
   const { templates: toolTemplates } = useToolTemplates();
@@ -214,6 +381,64 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
       setKnowledgeWizardType(null);
     } catch (error) {
       console.error('Error adding knowledge:', error);
+    }
+  };
+
+  const handleAddUrlKnowledge = async (title: string, url: string) => {
+    if (!agentId) return;
+
+    try {
+      const newKnowledge = await addKnowledgeItemToDB(agentId, {
+        name: title,
+        type: 'url',
+        content: url,
+        metadata: { source: 'url' },
+        enabled: true
+      });
+
+      if (newKnowledge.data) {
+        setLocalAgent((prev: any) => ({
+          ...prev,
+          knowledgeBases: [...(prev?.knowledgeBases || []), newKnowledge.data]
+        }));
+      }
+
+      setShowKnowledgeWizard(false);
+      setKnowledgeWizardStep(0);
+      setKnowledgeWizardType(null);
+    } catch (error) {
+      console.error('Error adding URL knowledge:', error);
+    }
+  };
+
+  const handleAddSocialMediaKnowledge = async (platform: string, handle: string) => {
+    if (!agentId) return;
+
+    try {
+      const newKnowledge = await addKnowledgeItemToDB(agentId, {
+        name: `${platform.charAt(0).toUpperCase() + platform.slice(1)} - ${handle}`,
+        type: 'social_media',
+        content: handle,
+        metadata: { 
+          source: 'social_media',
+          platform: platform,
+          handle: handle
+        },
+        enabled: true
+      });
+
+      if (newKnowledge.data) {
+        setLocalAgent((prev: any) => ({
+          ...prev,
+          knowledgeBases: [...(prev?.knowledgeBases || []), newKnowledge.data]
+        }));
+      }
+
+      setShowKnowledgeWizard(false);
+      setKnowledgeWizardStep(0);
+      setKnowledgeWizardType(null);
+    } catch (error) {
+      console.error('Error adding social media knowledge:', error);
     }
   };
 
@@ -481,59 +706,14 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
 
             {/* Step 1: URL Import Type */}
             {knowledgeWizardStep === 1 && knowledgeWizardType === 'url' && (
-              <div className="max-w-2xl mx-auto">
-                <div className="text-center mb-8">
-                  <Globe className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Import URLs</h3>
-                  <p className="text-gray-600">Choose how you want to import URLs to your knowledge base</p>
-                </div>
-
-                <div className="space-y-4">
-                  <button
-                    onClick={() => {
-                      setUrlImportType('single');
-                      setKnowledgeWizardStep(2);
-                    }}
-                    className={`w-full p-6 border-2 rounded-xl text-left transition-all ${
-                      urlImportType === 'single' 
-                        ? 'border-indigo-300 bg-indigo-50' 
-                        : 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-                        <Link className="w-6 h-6 text-indigo-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900 mb-1">Single URL</h4>
-                        <p className="text-sm text-gray-600">Import one URL at a time</p>
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setUrlImportType('batch');
-                      setKnowledgeWizardStep(2);
-                    }}
-                    className={`w-full p-6 border-2 rounded-xl text-left transition-all ${
-                      urlImportType === 'batch' 
-                        ? 'border-indigo-300 bg-indigo-50' 
-                        : 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-                        <Database className="w-6 h-6 text-indigo-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900 mb-1">Batch Import</h4>
-                        <p className="text-sm text-gray-600">Import multiple URLs at once</p>
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              </div>
+              <UrlImportWizard 
+                onAddKnowledge={handleAddUrlKnowledge}
+                onCancel={() => {
+                  setShowKnowledgeWizard(false);
+                  setKnowledgeWizardStep(0);
+                  setKnowledgeWizardType(null);
+                }}
+              />
             )}
 
             {/* Step 1: Text Knowledge */}
@@ -547,9 +727,25 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
 
                 <TextKnowledgeWizard
                   onAddKnowledge={handleAddKnowledge}
-                  onCancel={() => setShowKnowledgeWizard(false)}
+                  onCancel={() => {
+                    setShowKnowledgeWizard(false);
+                    setKnowledgeWizardStep(0);
+                    setKnowledgeWizardType(null);
+                  }}
                 />
               </div>
+            )}
+
+            {/* Step 2: Social Media Account */}
+            {knowledgeWizardStep === 2 && knowledgeWizardType === 'social' && (
+              <SocialMediaImportWizard
+                onAddKnowledge={handleAddSocialMediaKnowledge}
+                onCancel={() => {
+                  setShowKnowledgeWizard(false);
+                  setKnowledgeWizardStep(0);
+                  setKnowledgeWizardType(null);
+                }}
+              />
             )}
           </div>
         </motion.div>
@@ -935,6 +1131,7 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
                   <button
                     onClick={() => {
                       setKnowledgeWizardType('existing');
+                      setKnowledgeWizardStep(0);
                       setShowKnowledgeWizard(true);
                     }}
                     className="p-4 border border-gray-300 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center"
@@ -945,6 +1142,7 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
                   <button
                     onClick={() => {
                       setKnowledgeWizardType('url');
+                      setKnowledgeWizardStep(1);
                       setShowKnowledgeWizard(true);
                     }}
                     className="p-4 border border-gray-300 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center"
@@ -955,6 +1153,7 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
                   <button
                     onClick={() => {
                       setKnowledgeWizardType('social');
+                      setKnowledgeWizardStep(1);
                       setShowKnowledgeWizard(true);
                     }}
                     className="p-4 border border-gray-300 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center"
@@ -965,6 +1164,7 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
                   <button
                     onClick={() => {
                       setKnowledgeWizardType('text');
+                      setKnowledgeWizardStep(1);
                       setShowKnowledgeWizard(true);
                     }}
                     className="p-4 border border-gray-300 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all text-center"
@@ -1113,6 +1313,7 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
           <PromptEngineeringWizard
             onClose={() => setShowPromptWizard(false)}
             onSave={handleSavePrompt}
+            initialPrompt={localAgent.system_prompt}
           />
         )}
       </AnimatePresence>
