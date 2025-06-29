@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   X, 
@@ -9,8 +9,20 @@ import {
   GitBranch, 
   Webhook, 
   Bot,
-  Filter
+  Filter,
+  Globe,
+  Hash,
+  Target,
+  Database,
+  Mail,
+  Share2,
+  Contact,
+  BarChart3,
+  TrendingUp,
+  Code,
+  FileBarChart
 } from 'lucide-react';
+import { TemplateService, PlatformTemplate } from '../../services/templateService';
 
 interface StepTemplate {
   type: string;
@@ -30,55 +42,68 @@ interface StepLibraryProps {
 const StepLibrary: React.FC<StepLibraryProps> = ({ onSelectStep, onClose }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [platforms, setPlatforms] = useState<PlatformTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadPlatforms();
+  }, []);
+
+  const loadPlatforms = async () => {
+    try {
+      const platformData = await TemplateService.getPlatformTemplates();
+      setPlatforms(platformData);
+    } catch (error) {
+      console.error('Error loading platforms:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Icon mapping for different tool types
+  const getToolIcon = (iconName: string) => {
+    const iconMap: Record<string, any> = {
+      'globe': Globe,
+      'users': Contact,
+      'file-text': FileBarChart,
+      'search': Search,
+      'hash': Hash,
+      'target': Target,
+      'database': Database,
+      'mail': Mail,
+      'share-2': Share2,
+      'contact': Contact,
+      'bar-chart-3': BarChart3,
+      'trending-up': TrendingUp,
+      'code': Code,
+      'file-bar-chart': FileBarChart
+    };
+    return iconMap[iconName] || Bot;
+  };
 
   const stepTemplates: StepTemplate[] = [
-    // Messaging Steps
+    // Messaging Steps - dynamically generated from platforms
+    ...platforms.map(platform => ({
+      type: 'send_message',
+      label: `Send ${platform.name} Message`,
+      description: platform.description,
+      icon: MessageSquare,
+      category: 'messaging' as const,
+      platform: platform.platform_key,
+      config: {
+        platform: platform.platform_key,
+        apiConfig: platform.configuration_schema,
+        rateLimits: platform.rate_limits
+      }
+    })),
+
+    // Generic messaging step
     {
       type: 'send_message',
       label: 'Send Message',
-      description: 'Send a message via Instagram DM, email, SMS, or other platforms',
+      description: 'Send a message via any supported platform',
       icon: MessageSquare,
       category: 'messaging'
-    },
-    {
-      type: 'send_message',
-      label: 'Send Instagram DM',
-      description: 'Send a direct message on Instagram',
-      icon: MessageSquare,
-      category: 'messaging',
-      platform: 'instagram'
-    },
-    {
-      type: 'send_message',
-      label: 'Send Email',
-      description: 'Send an email message',
-      icon: MessageSquare,
-      category: 'messaging',
-      platform: 'email'
-    },
-    {
-      type: 'send_message',
-      label: 'Send WhatsApp Message',
-      description: 'Send a message via WhatsApp',
-      icon: MessageSquare,
-      category: 'messaging',
-      platform: 'whatsapp'
-    },
-    {
-      type: 'send_message',
-      label: 'Send SMS',
-      description: 'Send an SMS text message',
-      icon: MessageSquare,
-      category: 'messaging',
-      platform: 'sms'
-    },
-    {
-      type: 'send_message',
-      label: 'Send Telegram Message',
-      description: 'Send a message via Telegram',
-      icon: MessageSquare,
-      category: 'messaging',
-      platform: 'telegram'
     },
 
     // Logic Steps
@@ -152,21 +177,28 @@ const StepLibrary: React.FC<StepLibraryProps> = ({ onSelectStep, onClose }) => {
   }, {} as Record<string, { label: string; templates: StepTemplate[] }>);
 
   const getPlatformEmoji = (platform?: string) => {
-    switch (platform) {
-      case 'instagram':
-        return '📷';
-      case 'email':
-        return '📧';
-      case 'whatsapp':
-        return '💬';
-      case 'sms':
-        return '📱';
-      case 'telegram':
-        return '✈️';
-      default:
-        return '';
-    }
+    const platformData = platforms.find(p => p.platform_key === platform);
+    return platformData?.icon_emoji || '📨';
   };
+
+  if (loading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+        onClick={onClose}
+      >
+        <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex items-center justify-center">
+          <div className="text-center py-12">
+            <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading step templates...</p>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -264,6 +296,11 @@ const StepLibrary: React.FC<StepLibraryProps> = ({ onSelectStep, onClose }) => {
                           <div className="text-sm text-gray-600 leading-relaxed">
                             {template.description}
                           </div>
+                          {template.config?.rateLimits && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              Rate limits: {JSON.stringify(template.config.rateLimits)}
+                            </div>
+                          )}
                         </div>
                       </button>
                     ))}
