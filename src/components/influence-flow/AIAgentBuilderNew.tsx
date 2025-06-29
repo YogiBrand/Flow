@@ -496,40 +496,6 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
             letAgentDecide: false
           }
         ]
-      },
-      // Add new step types
-      {
-        id: 'ai_prompt',
-        name: 'AI Prompt',
-        description: 'Use a LLM as a step in your tools for reasoning, classification, and text generation',
-        category: 'AI',
-        enabled: false,
-        icon: Brain,
-        color: 'bg-purple-500',
-        type: 'ai_prompt',
-        inputs: []
-      },
-      {
-        id: 'google_search',
-        name: 'Google Search',
-        description: 'Search Google for real-time information',
-        category: 'Search',
-        enabled: false,
-        icon: Search,
-        color: 'bg-blue-500',
-        type: 'google_search',
-        inputs: []
-      },
-      {
-        id: 'knowledge_search',
-        name: 'Knowledge Search',
-        description: 'Search through your knowledge base',
-        category: 'Knowledge',
-        enabled: false,
-        icon: FileText,
-        color: 'bg-green-500',
-        type: 'knowledge_search',
-        inputs: []
       }
     ]
   });
@@ -541,7 +507,8 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
       description: 'Use a LLM as a step in your tools for reasoning, classification, and text generation',
       type: 'ai_prompt' as const,
       icon: Brain,
-      color: 'bg-purple-500'
+      color: 'bg-purple-500',
+      category: 'AI'
     },
     {
       id: 'google_search',
@@ -549,7 +516,8 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
       description: 'Search Google for real-time information',
       type: 'google_search' as const,
       icon: Search,
-      color: 'bg-blue-500'
+      color: 'bg-blue-500',
+      category: 'Search'
     },
     {
       id: 'knowledge_search',
@@ -557,7 +525,8 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
       description: 'Search through your knowledge base',
       type: 'knowledge_search' as const,
       icon: FileText,
-      color: 'bg-green-500'
+      color: 'bg-green-500',
+      category: 'Knowledge'
     },
     {
       id: 'web_scraper',
@@ -565,7 +534,8 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
       description: 'Extract data from web pages',
       type: 'web_scraper' as const,
       icon: Globe,
-      color: 'bg-orange-500'
+      color: 'bg-orange-500',
+      category: 'Data'
     },
     {
       id: 'api_call',
@@ -573,7 +543,8 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
       description: 'Make HTTP requests to external APIs',
       type: 'api_call' as const,
       icon: Webhook,
-      color: 'bg-indigo-500'
+      color: 'bg-indigo-500',
+      category: 'Integration'
     }
   ];
 
@@ -593,6 +564,26 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
       tools: prev.tools.map(t => 
         t.id === toolId ? { ...t, enabled: !t.enabled } : t
       )
+    }));
+  };
+
+  const addNewTool = (toolTemplate: any) => {
+    const newTool: Tool = {
+      id: `tool_${Date.now()}`,
+      name: toolTemplate.name,
+      description: toolTemplate.description,
+      category: toolTemplate.category,
+      type: toolTemplate.type,
+      icon: toolTemplate.icon,
+      color: toolTemplate.color,
+      enabled: true,
+      inputs: [],
+      config: {}
+    };
+
+    setCurrentAgent(prev => ({
+      ...prev,
+      tools: [...prev.tools, newTool]
     }));
   };
 
@@ -942,12 +933,33 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
           ))}
 
           {/* Add New Tool Card */}
-          <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-gray-400 transition-colors cursor-pointer">
+          <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-gray-400 transition-colors cursor-pointer relative">
             <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mb-4">
               <Plus className="w-6 h-6 text-gray-500" />
             </div>
             <h3 className="font-medium text-gray-900 mb-2">Add New Tool</h3>
-            <p className="text-sm text-gray-600">Extend your agent's capabilities</p>
+            <p className="text-sm text-gray-600 mb-4">Extend your agent's capabilities</p>
+            
+            {/* Dropdown for adding tools */}
+            <select
+              onChange={(e) => {
+                if (e.target.value) {
+                  const selectedTool = availableTools.find(t => t.id === e.target.value);
+                  if (selectedTool) {
+                    addNewTool(selectedTool);
+                  }
+                  e.target.value = '';
+                }
+              }}
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            >
+              <option value="">Select a tool...</option>
+              {availableTools.map(tool => (
+                <option key={tool.id} value={tool.id}>
+                  {tool.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
