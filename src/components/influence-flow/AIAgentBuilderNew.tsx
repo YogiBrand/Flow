@@ -50,13 +50,17 @@ import {
   Twitter,
   Youtube,
   Facebook,
-  Download,
-  FolderOpen,
-  File,
-  Folder,
+  MessageCircle,
+  Image,
+  Video,
+  Mic,
   Type,
+  Heart,
+  Share,
   BookOpen,
-  ExternalLink
+  FolderOpen,
+  ExternalLink,
+  Download
 } from 'lucide-react';
 
 interface AIAgentBuilderNewProps {
@@ -89,31 +93,31 @@ interface Tool {
 
 interface KnowledgeItem {
   id: string;
-  name: string;
-  type: 'file' | 'text' | 'website' | 'social_media' | 'knowledge_base';
-  source: string;
-  size?: string;
-  createdAt: string;
-  metadata?: any;
-}
-
-interface KnowledgeBase {
-  id: string;
+  type: 'file' | 'url' | 'social_media' | 'text' | 'knowledge_base';
   name: string;
   description?: string;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
+  source?: string;
+  metadata?: any;
+  addedAt: string;
 }
 
-interface Resource {
+interface SocialMediaPost {
   id: string;
-  name: string;
-  type: 'text' | 'document' | 'data';
-  content: string;
-  knowledge_base_id: string;
-  created_at: string;
-  updated_at: string;
+  platform: string;
+  type: 'post' | 'story' | 'reel' | 'video' | 'article';
+  title: string;
+  description: string;
+  url: string;
+  publishedAt: string;
+  metrics: {
+    likes?: number;
+    comments?: number;
+    shares?: number;
+    views?: number;
+  };
+  hasMedia: boolean;
+  hasTranscription: boolean;
+  commentsCount: number;
 }
 
 const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) => {
@@ -122,10 +126,11 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
   const [showToolWizard, setShowToolWizard] = useState(false);
   const [showToolLibrary, setShowToolLibrary] = useState(false);
   const [showNewToolBuilder, setShowNewToolBuilder] = useState(false);
-  const [showSocialMediaImport, setShowSocialMediaImport] = useState(false);
-  const [showExistingKnowledgeWizard, setShowExistingKnowledgeWizard] = useState(false);
+  const [showKnowledgeWizard, setShowKnowledgeWizard] = useState(false);
+  const [showSocialMediaWizard, setShowSocialMediaWizard] = useState(false);
   const [showTextEditor, setShowTextEditor] = useState(false);
-  const [agentKnowledge, setAgentKnowledge] = useState<KnowledgeItem[]>([]);
+  const [showUrlImport, setShowUrlImport] = useState(false);
+  const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeItem[]>([]);
 
   const [currentAgent] = useState({
     id: `agent_${Date.now()}`,
@@ -281,703 +286,53 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
     }
   };
 
-  // Mock data for knowledge bases - Replace with actual Supabase queries
-  const mockKnowledgeBases: KnowledgeBase[] = [
-    {
-      id: 'kb1',
-      name: 'Marketing Content',
-      description: 'All marketing-related content and strategies',
-      user_id: 'user1',
-      created_at: '2024-01-15T10:00:00Z',
-      updated_at: '2024-01-20T15:30:00Z'
-    },
-    {
-      id: 'kb2',
-      name: 'Product Documentation',
-      description: 'Technical documentation and product guides',
-      user_id: 'user1',
-      created_at: '2024-01-10T09:00:00Z',
-      updated_at: '2024-01-18T14:20:00Z'
-    },
-    {
-      id: 'kb3',
-      name: 'Customer Support',
-      description: 'FAQ, support scripts, and customer interaction guides',
-      user_id: 'user1',
-      created_at: '2024-01-05T08:00:00Z',
-      updated_at: '2024-01-22T16:45:00Z'
-    }
-  ];
-
-  const mockResources: Record<string, Resource[]> = {
-    'kb1': [
-      {
-        id: 'res1',
-        name: 'Email Campaign Templates',
-        type: 'text',
-        content: 'Collection of proven email templates for different campaign types...',
-        knowledge_base_id: 'kb1',
-        created_at: '2024-01-15T10:30:00Z',
-        updated_at: '2024-01-15T10:30:00Z'
-      },
-      {
-        id: 'res2',
-        name: 'Social Media Strategy Guide',
-        type: 'document',
-        content: 'Comprehensive guide for social media marketing strategies...',
-        knowledge_base_id: 'kb1',
-        created_at: '2024-01-16T11:00:00Z',
-        updated_at: '2024-01-16T11:00:00Z'
-      },
-      {
-        id: 'res3',
-        name: 'Lead Generation Tactics',
-        type: 'text',
-        content: 'Proven tactics for generating high-quality leads...',
-        knowledge_base_id: 'kb1',
-        created_at: '2024-01-17T09:15:00Z',
-        updated_at: '2024-01-17T09:15:00Z'
-      }
-    ],
-    'kb2': [
-      {
-        id: 'res4',
-        name: 'API Documentation',
-        type: 'document',
-        content: 'Complete API reference and integration guides...',
-        knowledge_base_id: 'kb2',
-        created_at: '2024-01-10T10:00:00Z',
-        updated_at: '2024-01-10T10:00:00Z'
-      },
-      {
-        id: 'res5',
-        name: 'Feature Specifications',
-        type: 'data',
-        content: 'Detailed specifications for all product features...',
-        knowledge_base_id: 'kb2',
-        created_at: '2024-01-12T14:30:00Z',
-        updated_at: '2024-01-12T14:30:00Z'
-      }
-    ],
-    'kb3': [
-      {
-        id: 'res6',
-        name: 'Common Support Issues',
-        type: 'text',
-        content: 'Frequently encountered support issues and their solutions...',
-        knowledge_base_id: 'kb3',
-        created_at: '2024-01-05T09:00:00Z',
-        updated_at: '2024-01-05T09:00:00Z'
-      },
-      {
-        id: 'res7',
-        name: 'Customer Onboarding Scripts',
-        type: 'text',
-        content: 'Scripts for guiding new customers through onboarding...',
-        knowledge_base_id: 'kb3',
-        created_at: '2024-01-08T13:20:00Z',
-        updated_at: '2024-01-08T13:20:00Z'
-      }
-    ]
+  const addKnowledgeItem = (item: Omit<KnowledgeItem, 'id' | 'addedAt'>) => {
+    const newItem: KnowledgeItem = {
+      ...item,
+      id: `knowledge_${Date.now()}`,
+      addedAt: new Date().toISOString()
+    };
+    setKnowledgeItems(prev => [...prev, newItem]);
   };
 
-  // Tool Library Modal
-  const ToolLibrary = ({ onClose }: { onClose: () => void }) => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('trending');
-
-    const trendingTools = [
-      {
-        id: 'add_answer_to_kb',
-        name: 'Add Answer to Knowledge Base',
-        description: 'Add answers and information to your knowledge base',
-        verified: true,
-        icon: BookOpen,
-        color: 'bg-green-500'
-      },
-      {
-        id: 'add_comment_to_notion',
-        name: 'Add Comment to Notion',
-        description: 'Add comments to Notion pages and databases',
-        verified: true,
-        icon: FileText,
-        color: 'bg-gray-800'
-      },
-      {
-        id: 'add_comment_to_trello',
-        name: 'Add Comment to Trello Card',
-        description: 'Add comments to Trello cards',
-        verified: true,
-        icon: Briefcase,
-        color: 'bg-blue-500'
-      },
-      {
-        id: 'google_play_reviews',
-        name: 'Add Google Play Store Reviews to Knowledge',
-        description: 'Import and analyze Google Play Store reviews',
-        verified: true,
-        icon: Globe,
-        color: 'bg-green-600'
-      },
-      {
-        id: 'add_faq_entry',
-        name: 'Add FAQ Entry to Knowledge Base',
-        description: 'Add frequently asked questions to your knowledge base',
-        verified: true,
-        icon: MessageSquare,
-        color: 'bg-orange-500'
-      },
-      {
-        id: 'add_lead_to_email',
-        name: 'Add Lead to Email Campaign',
-        description: 'Add leads to email marketing campaigns',
-        verified: true,
-        icon: Mail,
-        color: 'bg-blue-600'
-      },
-      {
-        id: 'add_linkedin_employees',
-        name: 'Add LinkedIn Employees to Knowledge',
-        description: 'Import LinkedIn employee data to knowledge base',
-        verified: true,
-        icon: Linkedin,
-        color: 'bg-blue-700'
-      },
-      {
-        id: 'add_slack_threads',
-        name: 'Add Slack Threads to Knowledge',
-        description: 'Import Slack conversations to knowledge base',
-        verified: true,
-        icon: Slack,
-        color: 'bg-purple-600'
-      }
-    ];
-
-    const categories = [
-      { id: 'all', name: 'All tools' },
-      { id: 'trending', name: 'Trending' },
-      { id: 'your_tools', name: 'Your tools' }
-    ];
-
-    const byUseCase = [
-      { id: 'communications', name: 'Communications', icon: MessageSquare },
-      { id: 'crm', name: 'CRM', icon: Users },
-      { id: 'calendar', name: 'Calendar', icon: Calendar },
-      { id: 'data_scraper', name: 'Data scraper', icon: Database },
-      { id: 'handle_files', name: 'Handle files', icon: FileText },
-      { id: 'knowledge', name: 'Knowledge', icon: BookOpen }
-    ];
-
-    const byApps = [
-      { id: 'gmail', name: 'Gmail', icon: Mail },
-      { id: 'google_calendar', name: 'Google Calendar', icon: Calendar },
-      { id: 'hubspot', name: 'HubSpot', icon: Building },
-      { id: 'outlook', name: 'Outlook', icon: Mail },
-      { id: 'linkedin', name: 'LinkedIn', icon: Linkedin },
-      { id: 'notion', name: 'Notion', icon: FileText },
-      { id: 'slack', name: 'Slack', icon: Slack }
-    ];
-
-    const filteredTools = trendingTools.filter(tool =>
-      tool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tool.description.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-      >
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-white rounded-2xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
-        >
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">Tools</h2>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="flex items-center gap-4 mb-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search 9,000+ tools..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <button
-                onClick={() => setShowNewToolBuilder(true)}
-                className="px-4 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                New tool
-              </button>
-            </div>
-          </div>
-
-          <div className="flex h-[calc(90vh-140px)]">
-            {/* Sidebar */}
-            <div className="w-80 border-r border-gray-200 p-6 overflow-y-auto">
-              <div className="space-y-6">
-                {/* Tools Categories */}
-                <div>
-                  <h3 className="text-sm font-medium text-gray-900 mb-3">Tools</h3>
-                  <div className="space-y-1">
-                    {categories.map((category) => (
-                      <button
-                        key={category.id}
-                        onClick={() => setSelectedCategory(category.id)}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                          selectedCategory === category.id
-                            ? 'bg-blue-50 text-blue-700 font-medium'
-                            : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {category.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* By Use Case */}
-                <div>
-                  <h3 className="text-sm font-medium text-gray-900 mb-3">By use case</h3>
-                  <div className="space-y-1">
-                    {byUseCase.map((useCase) => (
-                      <button
-                        key={useCase.id}
-                        className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                      >
-                        <useCase.icon className="w-4 h-4" />
-                        {useCase.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* By Apps */}
-                <div>
-                  <h3 className="text-sm font-medium text-gray-900 mb-3">By apps</h3>
-                  <div className="space-y-1">
-                    {byApps.map((app) => (
-                      <button
-                        key={app.id}
-                        className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                      >
-                        <app.icon className="w-4 h-4" />
-                        {app.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Main Content */}
-            <div className="flex-1 p-6 overflow-y-auto">
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Trending</h3>
-                <p className="text-gray-600">Popular tool templates from the community</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredTools.map((tool) => (
-                  <div
-                    key={tool.id}
-                    className="border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 ${tool.color} rounded-lg flex items-center justify-center`}>
-                        <tool.icon className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-gray-900 group-hover:text-blue-700 transition-colors">
-                            {tool.name}
-                          </h4>
-                          {tool.verified && (
-                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
-                              Verified
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 leading-relaxed">
-                          {tool.description}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
-    );
+  const removeKnowledgeItem = (id: string) => {
+    setKnowledgeItems(prev => prev.filter(item => item.id !== id));
   };
 
-  // New Tool Builder Modal
-  const NewToolBuilder = ({ onClose }: { onClose: () => void }) => {
-    const [toolName, setToolName] = useState('');
-    const [toolDescription, setToolDescription] = useState('');
-    const [toolInputs, setToolInputs] = useState<any[]>([]);
-    const [toolSteps, setToolSteps] = useState<any[]>([]);
-    const [showStepLibrary, setShowStepLibrary] = useState(false);
-
-    const inputTypes = [
-      { id: 'text', name: 'Text', icon: Type },
-      { id: 'long_text', name: 'Long text', icon: FileText },
-      { id: 'number', name: 'Number', icon: Hash },
-      { id: 'json', name: 'JSON', icon: Code },
-      { id: 'file_to_url', name: 'File to URL', icon: Upload },
-      { id: 'table', name: 'Table', icon: Database },
-      { id: 'more', name: 'More', icon: ChevronDown }
-    ];
-
-    const stepTypes = [
-      { id: 'llm', name: 'LLM', icon: Brain, description: 'Use a large language model' },
-      { id: 'knowledge', name: 'Knowledge', icon: BookOpen, description: 'Query knowledge base' },
-      { id: 'google', name: 'Google', icon: Globe, description: 'Search Google' },
-      { id: 'api', name: 'API', icon: Link, description: 'Make API calls' },
-      { id: 'python', name: 'Python', icon: Code, description: 'Run Python code' }
-    ];
-
-    const addInput = (type: string) => {
-      const newInput = {
-        id: `input_${Date.now()}`,
-        type,
-        name: `New ${type}`,
-        description: '',
-        required: false
-      };
-      setToolInputs([...toolInputs, newInput]);
-    };
-
-    const removeInput = (inputId: string) => {
-      setToolInputs(toolInputs.filter(input => input.id !== inputId));
-    };
-
-    const addStep = (stepType: any) => {
-      const newStep = {
-        id: `step_${Date.now()}`,
-        type: stepType.id,
-        name: stepType.name,
-        description: stepType.description,
-        config: {}
-      };
-      setToolSteps([...toolSteps, newStep]);
-      setShowStepLibrary(false);
-    };
-
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-      >
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-white rounded-2xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
-        >
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={onClose}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span className="text-sm">Back to Tools</span>
-                </button>
-                <div className="w-px h-6 bg-gray-300" />
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Create New Tool</h2>
-                  <p className="text-sm text-gray-600">Build a custom tool for your agent</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                  Save changes
-                </button>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
-                  <Play className="w-4 h-4" />
-                  Run tool
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-            {/* Tool Header */}
-            <div className="mb-8">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
-                  <Plus className="w-6 h-6 text-gray-600" />
-                </div>
-                <div className="flex-1">
-                  <input
-                    type="text"
-                    value={toolName}
-                    onChange={(e) => setToolName(e.target.value)}
-                    placeholder="Type title..."
-                    className="text-2xl font-bold text-gray-900 bg-transparent border-none outline-none placeholder-gray-400 w-full"
-                  />
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-gray-500">Unsaved</span>
-                  </div>
-                </div>
-              </div>
-              <textarea
-                value={toolDescription}
-                onChange={(e) => setToolDescription(e.target.value)}
-                placeholder="Type short description..."
-                className="w-full text-gray-600 bg-transparent border-none outline-none placeholder-gray-400 resize-none"
-                rows={2}
-              />
-            </div>
-
-            {/* Inputs Section */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-purple-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Inputs</h3>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
-                    Configure
-                  </button>
-                  <button className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
-                    For Agent
-                  </button>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-3">Add type of input:</p>
-                <div className="flex flex-wrap gap-2">
-                  {inputTypes.map((type) => (
-                    <button
-                      key={type.id}
-                      onClick={() => addInput(type.id)}
-                      className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-sm"
-                    >
-                      <type.icon className="w-4 h-4" />
-                      {type.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Input List */}
-              {toolInputs.length > 0 && (
-                <div className="space-y-3">
-                  {toolInputs.map((input) => (
-                    <div key={input.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <input
-                          type="text"
-                          value={input.name}
-                          onChange={(e) => {
-                            setToolInputs(toolInputs.map(i => 
-                              i.id === input.id ? { ...i, name: e.target.value } : i
-                            ));
-                          }}
-                          className="font-medium text-gray-900 bg-transparent border-none outline-none"
-                        />
-                        <button
-                          onClick={() => removeInput(input.id)}
-                          className="text-red-600 hover:text-red-700 p-1"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <textarea
-                        value={input.description}
-                        onChange={(e) => {
-                          setToolInputs(toolInputs.map(i => 
-                            i.id === input.id ? { ...i, description: e.target.value } : i
-                          ));
-                        }}
-                        placeholder="Description..."
-                        className="w-full text-sm text-gray-600 bg-transparent border-none outline-none placeholder-gray-400 resize-none"
-                        rows={2}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Steps Section */}
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-4">
-                <Settings className="w-5 h-5 text-blue-600" />
-                <h3 className="text-lg font-semibold text-gray-900">Steps</h3>
-              </div>
-              <p className="text-sm text-gray-600 mb-4">
-                Define the logic of your tool. Chain together LLM prompts, call APIs, run code and more.
-              </p>
-
-              <div className="flex flex-wrap gap-2 mb-4">
-                <button
-                  onClick={() => setShowStepLibrary(true)}
-                  className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Step
-                </button>
-                {stepTypes.map((type) => (
-                  <button
-                    key={type.id}
-                    onClick={() => addStep(type)}
-                    className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-sm"
-                  >
-                    <type.icon className="w-4 h-4" />
-                    {type.name}
-                  </button>
-                ))}
-              </div>
-
-              {/* Steps List */}
-              {toolSteps.length > 0 && (
-                <div className="space-y-3">
-                  {toolSteps.map((step, index) => (
-                    <div key={step.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <span className="text-sm font-medium text-blue-700">{index + 1}</span>
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{step.name}</h4>
-                          <p className="text-sm text-gray-600">{step.description}</p>
-                        </div>
-                        <button className="text-gray-400 hover:text-gray-600 p-1">
-                          <Settings className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Step Library Modal */}
-              {showStepLibrary && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-                >
-                  <motion.div
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.95, opacity: 0 }}
-                    className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden"
-                  >
-                    <div className="p-6 border-b border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-gray-900">Add Step</h3>
-                        <button
-                          onClick={() => setShowStepLibrary(false)}
-                          className="text-gray-400 hover:text-gray-600 p-1"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <div className="grid grid-cols-2 gap-4">
-                        {stepTypes.map((type) => (
-                          <button
-                            key={type.id}
-                            onClick={() => addStep(type)}
-                            className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
-                          >
-                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                              <type.icon className="w-5 h-5 text-gray-600" />
-                            </div>
-                            <div>
-                              <h4 className="font-medium text-gray-900 mb-1">{type.name}</h4>
-                              <p className="text-sm text-gray-600">{type.description}</p>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.div>
-                </motion.div>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
-    );
-  };
-
-  // Social Media Import Wizard
-  const SocialMediaImportWizard = ({ onClose }: { onClose: () => void }) => {
+  // URL Import Wizard Component
+  const UrlImportWizard = ({ onClose }: { onClose: () => void }) => {
     const [currentStep, setCurrentStep] = useState(0);
-    const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
-    const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
-    const [selectedContent, setSelectedContent] = useState<string[]>([]);
+    const [importType, setImportType] = useState<'single' | 'batch'>('single');
+    const [singleUrl, setSingleUrl] = useState('');
+    const [batchUrls, setBatchUrls] = useState('');
+    const [urlList, setUrlList] = useState<string[]>([]);
 
     const steps = [
-      { id: 'platform', title: 'Choose Platform', icon: Globe },
-      { id: 'account', title: 'Select Account', icon: User },
-      { id: 'content', title: 'Choose Content', icon: FileText },
-      { id: 'import', title: 'Import', icon: Download }
+      { id: 'type', title: 'Import Type', icon: Link },
+      { id: 'urls', title: 'Add URLs', icon: Globe },
+      { id: 'review', title: 'Review & Import', icon: CheckCircle }
     ];
 
-    const platforms = [
-      { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'bg-pink-500' },
-      { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: 'bg-blue-700' },
-      { id: 'twitter', name: 'Twitter', icon: Twitter, color: 'bg-blue-500' },
-      { id: 'youtube', name: 'YouTube', icon: Youtube, color: 'bg-red-600' },
-      { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'bg-blue-600' }
-    ];
-
-    const mockAccounts = {
-      instagram: [
-        { id: 'ig1', name: '@yourcompany', followers: '12.5K', verified: true },
-        { id: 'ig2', name: '@personal_account', followers: '2.1K', verified: false }
-      ],
-      linkedin: [
-        { id: 'li1', name: 'Your Company Page', followers: '8.2K', verified: true },
-        { id: 'li2', name: 'Personal Profile', followers: '1.5K', verified: false }
-      ]
+    const handleBatchUrlsChange = (value: string) => {
+      setBatchUrls(value);
+      const urls = value.split('\n').filter(url => url.trim() !== '');
+      setUrlList(urls);
     };
 
-    const mockContent = {
-      instagram: [
-        { id: 'post1', type: 'All Posts', description: 'Import all Instagram posts', count: 245 },
-        { id: 'post2', type: 'Recent Posts', description: 'Last 30 days', count: 12 },
-        { id: 'post3', type: 'Top Performing', description: 'Highest engagement posts', count: 25 },
-        { id: 'story1', type: 'Story Highlights', description: 'Saved story highlights', count: 8 }
-      ],
-      linkedin: [
-        { id: 'post1', type: 'All Posts', description: 'Import all LinkedIn posts', count: 156 },
-        { id: 'post2', type: 'Articles', description: 'Published articles', count: 23 },
-        { id: 'post3', type: 'Company Updates', description: 'Company page posts', count: 89 }
-      ]
+    const handleImport = () => {
+      const urls = importType === 'single' ? [singleUrl] : urlList;
+      urls.forEach((url, index) => {
+        if (url.trim()) {
+          addKnowledgeItem({
+            type: 'url',
+            name: `URL Import ${index + 1}`,
+            description: url,
+            source: url,
+            metadata: { importType, importedAt: new Date().toISOString() }
+          });
+        }
+      });
+      onClose();
     };
 
     const renderStepContent = () => {
@@ -986,112 +341,497 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
           return (
             <div className="space-y-6">
               <div className="text-center mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Choose Social Media Platform</h3>
-                <p className="text-gray-600">Select the platform you want to import content from</p>
+                <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Link className="w-8 h-8 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Import URLs</h3>
+                <p className="text-gray-600">Choose how you want to import URLs to your knowledge base</p>
               </div>
+
+              <div className="space-y-4">
+                <div
+                  onClick={() => setImportType('single')}
+                  className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                    importType === 'single' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-4 h-4 rounded-full border-2 ${
+                      importType === 'single' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                    }`}>
+                      {importType === 'single' && <div className="w-2 h-2 bg-white rounded-full m-0.5" />}
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">Single URL</h4>
+                      <p className="text-sm text-gray-600">Import one URL at a time</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setImportType('batch')}
+                  className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                    importType === 'batch' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-4 h-4 rounded-full border-2 ${
+                      importType === 'batch' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                    }`}>
+                      {importType === 'batch' && <div className="w-2 h-2 bg-white rounded-full m-0.5" />}
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">Batch Import</h4>
+                      <p className="text-sm text-gray-600">Import multiple URLs at once</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+
+        case 1:
+          return (
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {importType === 'single' ? 'Add URL' : 'Add URLs'}
+                </h3>
+                <p className="text-gray-600">
+                  {importType === 'single' 
+                    ? 'Enter the URL you want to import' 
+                    : 'Enter multiple URLs, one per line'
+                  }
+                </p>
+              </div>
+
+              {importType === 'single' ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    URL
+                  </label>
+                  <input
+                    type="url"
+                    value={singleUrl}
+                    onChange={(e) => setSingleUrl(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="https://example.com"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    URLs (one per line)
+                  </label>
+                  <textarea
+                    value={batchUrls}
+                    onChange={(e) => handleBatchUrlsChange(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows={8}
+                    placeholder={`https://example.com/page1
+https://example.com/page2
+https://example.com/page3`}
+                  />
+                  {urlList.length > 0 && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      {urlList.length} URL{urlList.length !== 1 ? 's' : ''} detected
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+
+        case 2:
+          const reviewUrls = importType === 'single' ? [singleUrl] : urlList;
+          return (
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Review URLs</h3>
+                <p className="text-gray-600">Confirm the URLs you want to import</p>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-4 max-h-60 overflow-y-auto">
+                <h4 className="font-medium text-gray-900 mb-3">
+                  {reviewUrls.length} URL{reviewUrls.length !== 1 ? 's' : ''} to import:
+                </h4>
+                <div className="space-y-2">
+                  {reviewUrls.map((url, index) => (
+                    <div key={index} className="flex items-center gap-3 p-2 bg-white rounded-lg">
+                      <Globe className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-700 truncate flex-1">{url}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+
+        default:
+          return null;
+      }
+    };
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+        >
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={onClose}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="text-sm">Back</span>
+              </button>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Progress Steps */}
+            <div className="flex items-center justify-between">
+              {steps.map((step, index) => (
+                <div key={step.id} className="flex items-center">
+                  <div className={`flex items-center gap-3 ${index <= currentStep ? 'text-blue-600' : 'text-gray-400'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                      index < currentStep 
+                        ? 'bg-blue-600 border-blue-600 text-white' 
+                        : index === currentStep 
+                        ? 'border-blue-600 text-blue-600' 
+                        : 'border-gray-300 text-gray-400'
+                    }`}>
+                      {index < currentStep ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <step.icon className="w-4 h-4" />
+                      )}
+                    </div>
+                    <span className="text-sm font-medium hidden sm:block">{step.title}</span>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className={`w-12 h-0.5 mx-4 ${index < currentStep ? 'bg-blue-600' : 'bg-gray-300'}`} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+            {renderStepContent()}
+          </div>
+
+          {/* Footer */}
+          <div className="p-6 border-t border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                disabled={currentStep === 0}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
               
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {platforms.map((platform) => (
+              <div className="flex items-center gap-3">
+                {currentStep < steps.length - 1 ? (
                   <button
+                    onClick={() => setCurrentStep(currentStep + 1)}
+                    disabled={
+                      (currentStep === 1 && importType === 'single' && !singleUrl.trim()) ||
+                      (currentStep === 1 && importType === 'batch' && urlList.length === 0)
+                    }
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleImport}
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Import URLs
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    );
+  };
+
+  // Enhanced Social Media Wizard Component
+  const SocialMediaWizard = ({ onClose }: { onClose: () => void }) => {
+    const [currentStep, setCurrentStep] = useState(0);
+    const [selectedPlatform, setSelectedPlatform] = useState<string>('');
+    const [selectedAccount, setSelectedAccount] = useState<string>('');
+    const [contentType, setContentType] = useState<'all' | 'specific'>('all');
+    const [selectedPosts, setSelectedPosts] = useState<string[]>([]);
+    const [contentParts, setContentParts] = useState({
+      media: true,
+      transcription: true,
+      comments: false,
+      commentsCount: 10,
+      captions: true,
+      metadata: true
+    });
+
+    const platforms = [
+      { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'bg-pink-500' },
+      { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: 'bg-blue-600' },
+      { id: 'twitter', name: 'Twitter', icon: Twitter, color: 'bg-blue-400' },
+      { id: 'youtube', name: 'YouTube', icon: Youtube, color: 'bg-red-500' },
+      { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'bg-blue-700' }
+    ];
+
+    const mockAccounts = {
+      instagram: [
+        { id: 'acc1', name: '@johndoe', followers: '12.5K' },
+        { id: 'acc2', name: '@business_account', followers: '45.2K' }
+      ],
+      linkedin: [
+        { id: 'acc3', name: 'John Doe', type: 'Personal Profile' },
+        { id: 'acc4', name: 'Company Page', type: 'Business Page' }
+      ],
+      twitter: [
+        { id: 'acc5', name: '@johndoe', followers: '8.3K' }
+      ]
+    };
+
+    const mockPosts: SocialMediaPost[] = [
+      {
+        id: 'post1',
+        platform: 'instagram',
+        type: 'post',
+        title: 'Marketing Tips for 2024',
+        description: 'Here are the top 5 marketing strategies...',
+        url: 'https://instagram.com/p/abc123',
+        publishedAt: '2024-01-15',
+        metrics: { likes: 245, comments: 18, shares: 12 },
+        hasMedia: true,
+        hasTranscription: false,
+        commentsCount: 18
+      },
+      {
+        id: 'post2',
+        platform: 'instagram',
+        type: 'reel',
+        title: 'Quick Social Media Hack',
+        description: 'This one trick will boost your engagement...',
+        url: 'https://instagram.com/reel/def456',
+        publishedAt: '2024-01-12',
+        metrics: { likes: 1200, comments: 89, shares: 156, views: 15000 },
+        hasMedia: true,
+        hasTranscription: true,
+        commentsCount: 89
+      }
+    ];
+
+    const steps = [
+      { id: 'platform', title: 'Select Platform', icon: Globe },
+      { id: 'account', title: 'Choose Account', icon: User },
+      { id: 'content', title: 'Select Content', icon: FileText },
+      { id: 'parts', title: 'Content Parts', icon: Settings },
+      { id: 'review', title: 'Review & Import', icon: CheckCircle }
+    ];
+
+    const handleImport = () => {
+      const platform = platforms.find(p => p.id === selectedPlatform);
+      const account = mockAccounts[selectedPlatform]?.find(a => a.id === selectedAccount);
+      
+      addKnowledgeItem({
+        type: 'social_media',
+        name: `${platform?.name} - ${account?.name}`,
+        description: `Imported ${contentType === 'all' ? 'all content' : `${selectedPosts.length} posts`} from ${platform?.name}`,
+        source: selectedPlatform,
+        metadata: {
+          platform: selectedPlatform,
+          account: selectedAccount,
+          contentType,
+          selectedPosts: contentType === 'specific' ? selectedPosts : [],
+          contentParts,
+          importedAt: new Date().toISOString()
+        }
+      });
+      onClose();
+    };
+
+    const renderStepContent = () => {
+      switch (currentStep) {
+        case 0:
+          return (
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Platform</h3>
+                <p className="text-gray-600">Choose the social media platform to import content from</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {platforms.map((platform) => (
+                  <div
                     key={platform.id}
                     onClick={() => setSelectedPlatform(platform.id)}
-                    className={`p-6 border-2 rounded-xl transition-all ${
-                      selectedPlatform === platform.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                    className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                      selectedPlatform === platform.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <div className={`w-12 h-12 ${platform.color} rounded-xl flex items-center justify-center mx-auto mb-3`}>
-                      <platform.icon className="w-6 h-6 text-white" />
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 ${platform.color} rounded-lg flex items-center justify-center`}>
+                        <platform.icon className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">{platform.name}</h4>
+                      </div>
                     </div>
-                    <h4 className="font-medium text-gray-900">{platform.name}</h4>
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
           );
 
         case 1:
-          const accounts = mockAccounts[selectedPlatform as keyof typeof mockAccounts] || [];
+          const accounts = mockAccounts[selectedPlatform] || [];
           return (
             <div className="space-y-6">
               <div className="text-center mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Account</h3>
-                <p className="text-gray-600">Choose which account to import content from</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Choose Account</h3>
+                <p className="text-gray-600">Select the account to import content from</p>
               </div>
-              
+
               <div className="space-y-3">
                 {accounts.map((account) => (
-                  <button
+                  <div
                     key={account.id}
                     onClick={() => setSelectedAccount(account.id)}
-                    className={`w-full p-4 border-2 rounded-xl transition-all text-left ${
-                      selectedAccount === account.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                    className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                      selectedAccount === account.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium text-gray-900">{account.name}</h4>
-                          {account.verified && (
-                            <CheckCircle className="w-4 h-4 text-blue-500" />
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600">{account.followers} followers</p>
-                      </div>
+                    <div className="flex items-center gap-3">
                       <div className={`w-4 h-4 rounded-full border-2 ${
-                        selectedAccount === account.id
-                          ? 'bg-blue-500 border-blue-500'
-                          : 'border-gray-300'
+                        selectedAccount === account.id ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
                       }`}>
-                        {selectedAccount === account.id && (
-                          <Check className="w-2 h-2 text-white m-0.5" />
-                        )}
+                        {selectedAccount === account.id && <div className="w-2 h-2 bg-white rounded-full m-0.5" />}
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">{account.name}</h4>
+                        <p className="text-sm text-gray-600">
+                          {account.followers || account.type}
+                        </p>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
           );
 
         case 2:
-          const content = mockContent[selectedPlatform as keyof typeof mockContent] || [];
           return (
             <div className="space-y-6">
               <div className="text-center mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Choose Content to Import</h3>
-                <p className="text-gray-600">Select what type of content you want to add to your knowledge base</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Content</h3>
+                <p className="text-gray-600">Choose what content to import</p>
               </div>
-              
-              <div className="space-y-3">
-                {content.map((item) => (
-                  <label
-                    key={item.id}
-                    className="flex items-center p-4 border border-gray-200 rounded-xl hover:border-gray-300 transition-colors cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedContent.includes(item.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedContent([...selectedContent, item.id]);
-                        } else {
-                          setSelectedContent(selectedContent.filter(id => id !== item.id));
-                        }
-                      }}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-4"
-                    />
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{item.type}</h4>
-                      <p className="text-sm text-gray-600">{item.description}</p>
+
+              <div className="space-y-4">
+                <div
+                  onClick={() => setContentType('all')}
+                  className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                    contentType === 'all' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-4 h-4 rounded-full border-2 ${
+                      contentType === 'all' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                    }`}>
+                      {contentType === 'all' && <div className="w-2 h-2 bg-white rounded-full m-0.5" />}
                     </div>
-                    <span className="text-sm text-gray-500">{item.count} items</span>
-                  </label>
-                ))}
+                    <div>
+                      <h4 className="font-medium text-gray-900">All Content</h4>
+                      <p className="text-sm text-gray-600">Import all posts from this account</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setContentType('specific')}
+                  className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                    contentType === 'specific' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-4 h-4 rounded-full border-2 ${
+                      contentType === 'specific' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                    }`}>
+                      {contentType === 'specific' && <div className="w-2 h-2 bg-white rounded-full m-0.5" />}
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">Specific Posts</h4>
+                      <p className="text-sm text-gray-600">Choose individual posts to import</p>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              {contentType === 'specific' && (
+                <div className="mt-6">
+                  <h4 className="font-medium text-gray-900 mb-3">Select Posts</h4>
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {mockPosts.map((post) => (
+                      <div
+                        key={post.id}
+                        onClick={() => {
+                          setSelectedPosts(prev => 
+                            prev.includes(post.id) 
+                              ? prev.filter(id => id !== post.id)
+                              : [...prev, post.id]
+                          );
+                        }}
+                        className={`p-3 border rounded-lg cursor-pointer transition-all ${
+                          selectedPosts.includes(post.id) ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`w-4 h-4 rounded border mt-1 ${
+                            selectedPosts.includes(post.id) ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
+                          }`}>
+                            {selectedPosts.includes(post.id) && <Check className="w-3 h-3 text-white" />}
+                          </div>
+                          <div className="flex-1">
+                            <h5 className="font-medium text-gray-900">{post.title}</h5>
+                            <p className="text-sm text-gray-600 mt-1">{post.description}</p>
+                            <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                              <span>{post.type}</span>
+                              <span>{post.metrics.likes} likes</span>
+                              <span>{post.metrics.comments} comments</span>
+                              {post.hasTranscription && <span>Has transcription</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           );
 
@@ -1099,275 +839,131 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
           return (
             <div className="space-y-6">
               <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Import Complete!</h3>
-                <p className="text-gray-600">Your social media content has been successfully imported</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Content Parts</h3>
+                <p className="text-gray-600">Choose what parts of the content to extract</p>
               </div>
 
-              <div className="bg-gray-50 rounded-xl p-6 space-y-4">
-                <h4 className="font-medium text-gray-900">Import Summary</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Platform:</span>
-                    <span className="font-medium text-gray-900 capitalize">{selectedPlatform}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Content Types:</span>
-                    <span className="font-medium text-gray-900">{selectedContent.length} selected</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Status:</span>
-                    <span className="font-medium text-green-600">Imported Successfully</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-
-        default:
-          return null;
-      }
-    };
-
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-      >
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
-        >
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Import Social Media Content</h2>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Progress Steps */}
-            <div className="flex items-center justify-between">
-              {steps.map((step, index) => (
-                <div key={step.id} className="flex items-center">
-                  <div className={`flex items-center gap-3 ${index <= currentStep ? 'text-blue-600' : 'text-gray-400'}`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                      index < currentStep 
-                        ? 'bg-blue-600 border-blue-600 text-white' 
-                        : index === currentStep 
-                        ? 'border-blue-600 text-blue-600' 
-                        : 'border-gray-300 text-gray-400'
-                    }`}>
-                      {index < currentStep ? (
-                        <Check className="w-4 h-4" />
-                      ) : (
-                        <step.icon className="w-4 h-4" />
-                      )}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Image className="w-5 h-5 text-gray-600" />
+                    <div>
+                      <h4 className="font-medium text-gray-900">Media (Images/Videos)</h4>
+                      <p className="text-sm text-gray-600">Extract media files from posts</p>
                     </div>
-                    <span className="text-sm font-medium hidden sm:block">{step.title}</span>
                   </div>
-                  {index < steps.length - 1 && (
-                    <div className={`w-12 h-0.5 mx-4 ${index < currentStep ? 'bg-blue-600' : 'bg-gray-300'}`} />
-                  )}
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={contentParts.media}
+                      onChange={(e) => setContentParts(prev => ({ ...prev, media: e.target.checked }))}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Content */}
-          <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-            {renderStepContent()}
-          </div>
+                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Type className="w-5 h-5 text-gray-600" />
+                    <div>
+                      <h4 className="font-medium text-gray-900">Captions & Text</h4>
+                      <p className="text-sm text-gray-600">Extract post captions and text content</p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={contentParts.captions}
+                      onChange={(e) => setContentParts(prev => ({ ...prev, captions: e.target.checked }))}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
 
-          {/* Footer */}
-          <div className="p-6 border-t border-gray-200 bg-gray-50">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-                disabled={currentStep === 0}
-                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              
-              <div className="flex items-center gap-3">
-                {currentStep < steps.length - 1 ? (
-                  <button
-                    onClick={() => {
-                      if (currentStep === 0 && !selectedPlatform) return;
-                      if (currentStep === 1 && !selectedAccount) return;
-                      if (currentStep === 2 && selectedContent.length === 0) return;
-                      setCurrentStep(currentStep + 1);
-                    }}
-                    disabled={
-                      (currentStep === 0 && !selectedPlatform) ||
-                      (currentStep === 1 && !selectedAccount) ||
-                      (currentStep === 2 && selectedContent.length === 0)
-                    }
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
-                ) : (
-                  <button
-                    onClick={onClose}
-                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    Done
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
-    );
-  };
+                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Mic className="w-5 h-5 text-gray-600" />
+                    <div>
+                      <h4 className="font-medium text-gray-900">Transcriptions</h4>
+                      <p className="text-sm text-gray-600">Extract video/audio transcriptions</p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={contentParts.transcription}
+                      onChange={(e) => setContentParts(prev => ({ ...prev, transcription: e.target.checked }))}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
 
-  // Existing Knowledge Wizard
-  const ExistingKnowledgeWizard = ({ onClose }: { onClose: () => void }) => {
-    const [currentStep, setCurrentStep] = useState(0);
-    const [selectedKnowledgeBase, setSelectedKnowledgeBase] = useState<KnowledgeBase | null>(null);
-    const [selectedResources, setSelectedResources] = useState<string[]>([]);
-
-    const steps = [
-      { id: 'knowledge_base', title: 'Select Knowledge Base', icon: Database },
-      { id: 'resources', title: 'Choose Resources', icon: FileText },
-      { id: 'review', title: 'Review & Add', icon: CheckCircle }
-    ];
-
-    const getResourceIcon = (type: string) => {
-      switch (type) {
-        case 'document':
-          return FileText;
-        case 'data':
-          return Database;
-        default:
-          return Type;
-      }
-    };
-
-    const renderStepContent = () => {
-      switch (currentStep) {
-        case 0:
-          return (
-            <div className="space-y-6">
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Knowledge Base</h3>
-                <p className="text-gray-600">Choose from your existing knowledge bases</p>
-              </div>
-              
-              <div className="space-y-3">
-                {mockKnowledgeBases.map((kb) => (
-                  <button
-                    key={kb.id}
-                    onClick={() => setSelectedKnowledgeBase(kb)}
-                    className={`w-full p-4 border-2 rounded-xl transition-all text-left ${
-                      selectedKnowledgeBase?.id === kb.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Database className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900 mb-1">{kb.name}</h4>
-                        <p className="text-sm text-gray-600 mb-2">{kb.description}</p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <span>Created {new Date(kb.created_at).toLocaleDateString()}</span>
-                          <span>•</span>
-                          <span>{mockResources[kb.id]?.length || 0} resources</span>
-                        </div>
-                      </div>
-                      <div className={`w-4 h-4 rounded-full border-2 ${
-                        selectedKnowledgeBase?.id === kb.id
-                          ? 'bg-blue-500 border-blue-500'
-                          : 'border-gray-300'
-                      }`}>
-                        {selectedKnowledgeBase?.id === kb.id && (
-                          <Check className="w-2 h-2 text-white m-0.5" />
-                        )}
+                <div className="p-3 border border-gray-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <MessageCircle className="w-5 h-5 text-gray-600" />
+                      <div>
+                        <h4 className="font-medium text-gray-900">Comments</h4>
+                        <p className="text-sm text-gray-600">Extract comments from posts</p>
                       </div>
                     </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          );
-
-        case 1:
-          const resources = selectedKnowledgeBase ? mockResources[selectedKnowledgeBase.id] || [] : [];
-          return (
-            <div className="space-y-6">
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Choose Resources</h3>
-                <p className="text-gray-600">Select specific resources from {selectedKnowledgeBase?.name}</p>
-              </div>
-              
-              <div className="space-y-3">
-                {resources.map((resource) => {
-                  const ResourceIcon = getResourceIcon(resource.type);
-                  return (
-                    <label
-                      key={resource.id}
-                      className="flex items-center p-4 border border-gray-200 rounded-xl hover:border-gray-300 transition-colors cursor-pointer"
-                    >
+                    <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={selectedResources.includes(resource.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedResources([...selectedResources, resource.id]);
-                          } else {
-                            setSelectedResources(selectedResources.filter(id => id !== resource.id));
-                          }
-                        }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-4"
+                        checked={contentParts.comments}
+                        onChange={(e) => setContentParts(prev => ({ ...prev, comments: e.target.checked }))}
+                        className="sr-only peer"
                       />
-                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                        <ResourceIcon className="w-5 h-5 text-gray-600" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{resource.name}</h4>
-                        <p className="text-sm text-gray-600 mb-1">
-                          {resource.content.substring(0, 100)}...
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            resource.type === 'text' ? 'bg-green-100 text-green-700' :
-                            resource.type === 'document' ? 'bg-blue-100 text-blue-700' :
-                            'bg-purple-100 text-purple-700'
-                          }`}>
-                            {resource.type}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {new Date(resource.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
-                  );
-                })}
+                  </div>
+                  
+                  {contentParts.comments && (
+                    <div className="ml-8">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Number of comments to extract
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={contentParts.commentsCount}
+                        onChange={(e) => setContentParts(prev => ({ ...prev, commentsCount: parseInt(e.target.value) || 10 }))}
+                        className="w-24 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Database className="w-5 h-5 text-gray-600" />
+                    <div>
+                      <h4 className="font-medium text-gray-900">Metadata</h4>
+                      <p className="text-sm text-gray-600">Extract engagement metrics and post data</p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={contentParts.metadata}
+                      onChange={(e) => setContentParts(prev => ({ ...prev, metadata: e.target.checked }))}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
               </div>
             </div>
           );
 
-        case 2:
-          const selectedResourcesData = selectedKnowledgeBase 
-            ? (mockResources[selectedKnowledgeBase.id] || []).filter(r => selectedResources.includes(r.id))
-            : [];
+        case 4:
+          const platform = platforms.find(p => p.id === selectedPlatform);
+          const account = mockAccounts[selectedPlatform]?.find(a => a.id === selectedAccount);
+          const selectedContentParts = Object.entries(contentParts).filter(([key, value]) => value && key !== 'commentsCount');
           
           return (
             <div className="space-y-6">
@@ -1375,35 +971,37 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
                 <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <CheckCircle className="w-8 h-8 text-green-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Review & Add</h3>
-                <p className="text-gray-600">Confirm your selections before adding to the agent</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Review Import</h3>
+                <p className="text-gray-600">Confirm your social media content import settings</p>
               </div>
 
               <div className="bg-gray-50 rounded-xl p-6 space-y-4">
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Knowledge Base</h4>
-                  <p className="text-sm text-gray-600">{selectedKnowledgeBase?.name}</p>
+                  <h4 className="font-medium text-gray-900 mb-2">Platform & Account</h4>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 ${platform?.color} rounded-lg flex items-center justify-center`}>
+                      {platform && <platform.icon className="w-4 h-4 text-white" />}
+                    </div>
+                    <span className="text-gray-700">{platform?.name} - {account?.name}</span>
+                  </div>
                 </div>
-                
+
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Selected Resources ({selectedResourcesData.length})</h4>
-                  <div className="space-y-2">
-                    {selectedResourcesData.map((resource) => {
-                      const ResourceIcon = getResourceIcon(resource.type);
-                      return (
-                        <div key={resource.id} className="flex items-center gap-3 py-2 px-3 bg-white rounded-lg border border-gray-200">
-                          <ResourceIcon className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm font-medium text-gray-900">{resource.name}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ml-auto ${
-                            resource.type === 'text' ? 'bg-green-100 text-green-700' :
-                            resource.type === 'document' ? 'bg-blue-100 text-blue-700' :
-                            'bg-purple-100 text-purple-700'
-                          }`}>
-                            {resource.type}
-                          </span>
-                        </div>
-                      );
-                    })}
+                  <h4 className="font-medium text-gray-900 mb-2">Content Selection</h4>
+                  <p className="text-gray-700">
+                    {contentType === 'all' ? 'All content' : `${selectedPosts.length} specific posts`}
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">Content Parts ({selectedContentParts.length})</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedContentParts.map(([key]) => (
+                      <span key={key} className="px-2 py-1 bg-blue-100 text-blue-700 text-sm rounded-full capitalize">
+                        {key === 'captions' ? 'Captions & Text' : key}
+                        {key === 'comments' && contentParts.comments && ` (${contentParts.commentsCount})`}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1413,30 +1011,6 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
         default:
           return null;
       }
-    };
-
-    const handleAddToAgent = () => {
-      if (!selectedKnowledgeBase) return;
-      
-      const selectedResourcesData = (mockResources[selectedKnowledgeBase.id] || [])
-        .filter(r => selectedResources.includes(r.id));
-      
-      const newKnowledgeItems: KnowledgeItem[] = selectedResourcesData.map(resource => ({
-        id: `knowledge_${Date.now()}_${resource.id}`,
-        name: resource.name,
-        type: 'knowledge_base',
-        source: `${selectedKnowledgeBase.name} / ${resource.name}`,
-        size: `${Math.floor(resource.content.length / 100)} KB`,
-        createdAt: new Date().toISOString(),
-        metadata: {
-          knowledgeBaseId: selectedKnowledgeBase.id,
-          resourceId: resource.id,
-          resourceType: resource.type
-        }
-      }));
-      
-      setAgentKnowledge(prev => [...prev, ...newKnowledgeItems]);
-      onClose();
     };
 
     return (
@@ -1455,7 +1029,13 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
           {/* Header */}
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Add Existing Knowledge</h2>
+              <button
+                onClick={onClose}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="text-sm">Back</span>
+              </button>
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-gray-600 p-1 rounded"
@@ -1485,7 +1065,7 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
                     <span className="text-sm font-medium hidden sm:block">{step.title}</span>
                   </div>
                   {index < steps.length - 1 && (
-                    <div className={`w-12 h-0.5 mx-4 ${index < currentStep ? 'bg-blue-600' : 'bg-gray-300'}`} />
+                    <div className={`w-8 h-0.5 mx-2 ${index < currentStep ? 'bg-blue-600' : 'bg-gray-300'}`} />
                   )}
                 </div>
               ))}
@@ -1511,14 +1091,11 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
               <div className="flex items-center gap-3">
                 {currentStep < steps.length - 1 ? (
                   <button
-                    onClick={() => {
-                      if (currentStep === 0 && !selectedKnowledgeBase) return;
-                      if (currentStep === 1 && selectedResources.length === 0) return;
-                      setCurrentStep(currentStep + 1);
-                    }}
+                    onClick={() => setCurrentStep(currentStep + 1)}
                     disabled={
-                      (currentStep === 0 && !selectedKnowledgeBase) ||
-                      (currentStep === 1 && selectedResources.length === 0)
+                      (currentStep === 0 && !selectedPlatform) ||
+                      (currentStep === 1 && !selectedAccount) ||
+                      (currentStep === 2 && contentType === 'specific' && selectedPosts.length === 0)
                     }
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -1526,121 +1103,13 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
                   </button>
                 ) : (
                   <button
-                    onClick={handleAddToAgent}
+                    onClick={handleImport}
                     className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                   >
-                    Add to Agent
+                    Import Content
                   </button>
                 )}
               </div>
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
-    );
-  };
-
-  // Text Editor Modal
-  const TextEditorModal = ({ onClose }: { onClose: () => void }) => {
-    const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
-
-    const handleSave = () => {
-      if (!title.trim() || !content.trim()) return;
-      
-      const newKnowledgeItem: KnowledgeItem = {
-        id: `text_${Date.now()}`,
-        name: title,
-        type: 'text',
-        source: 'Manual Entry',
-        size: `${Math.floor(content.length / 100)} KB`,
-        createdAt: new Date().toISOString(),
-        metadata: {
-          content,
-          wordCount: content.split(' ').length,
-          characterCount: content.length
-        }
-      };
-      
-      setAgentKnowledge(prev => [...prev, newKnowledgeItem]);
-      onClose();
-    };
-
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-      >
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
-        >
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">Add Text Knowledge</h2>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="p-6 space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Title
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter a title for this knowledge item..."
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Content
-              </label>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Enter your text content here..."
-                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                rows={12}
-              />
-              <div className="flex items-center justify-between mt-2 text-sm text-gray-500">
-                <span>{content.split(' ').filter(word => word.length > 0).length} words</span>
-                <span>{content.length} characters</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="p-6 border-t border-gray-200 bg-gray-50">
-            <div className="flex items-center justify-end gap-3">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={!title.trim() || !content.trim()}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Add to Knowledge
-              </button>
             </div>
           </div>
         </motion.div>
@@ -1905,6 +1374,891 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
     );
   };
 
+  // Tool Library Modal Component
+  const ToolLibraryModal = ({ onClose, onSelectTool }: { onClose: () => void; onSelectTool: (tool: any) => void }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('trending');
+
+    const trendingTools = [
+      {
+        id: 'add_answer_to_knowledge',
+        name: 'Add Answer to Knowledge Base',
+        description: 'Add AI-generated answers to your knowledge base',
+        author: 'Relevance AI',
+        verified: true,
+        icon: BookOpen,
+        color: 'bg-green-500'
+      },
+      {
+        id: 'add_comment_to_notion',
+        name: 'Add Comment to Notion',
+        description: 'Add comments to Notion pages',
+        author: 'Relevance AI',
+        verified: true,
+        icon: MessageSquare,
+        color: 'bg-gray-800'
+      },
+      {
+        id: 'add_comment_to_trello',
+        name: 'Add Comment to Trello Card',
+        description: 'Add comments to Trello cards',
+        author: 'Relevance AI',
+        verified: true,
+        icon: MessageSquare,
+        color: 'bg-blue-500'
+      },
+      {
+        id: 'google_play_reviews',
+        name: 'Add Google Play Store Reviews to Knowledge',
+        description: 'Import Google Play Store reviews',
+        author: 'Relevance AI',
+        verified: true,
+        icon: Download,
+        color: 'bg-green-600'
+      }
+    ];
+
+    const categories = [
+      { id: 'all', name: 'All tools' },
+      { id: 'trending', name: 'Trending' },
+      { id: 'your_tools', name: 'Your tools' }
+    ];
+
+    const useCaseCategories = [
+      { id: 'communications', name: 'Communications' },
+      { id: 'crm', name: 'CRM' },
+      { id: 'calendar', name: 'Calendar' },
+      { id: 'data_scraper', name: 'Data scraper' },
+      { id: 'handle_files', name: 'Handle files' },
+      { id: 'knowledge', name: 'Knowledge' }
+    ];
+
+    const appCategories = [
+      { id: 'gmail', name: 'Gmail', icon: Mail },
+      { id: 'google_calendar', name: 'Google Calendar', icon: Calendar },
+      { id: 'hubspot', name: 'HubSpot', icon: Building },
+      { id: 'outlook', name: 'Outlook', icon: Mail },
+      { id: 'linkedin', name: 'LinkedIn', icon: Linkedin },
+      { id: 'notion', name: 'Notion', icon: FileText },
+      { id: 'slack', name: 'Slack', icon: Slack }
+    ];
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          className="bg-white rounded-2xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
+        >
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Tools</h2>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowNewToolBuilder(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  New tool
+                </button>
+                <button
+                  onClick={onClose}
+                  className="text-gray-400 hover:text-gray-600 p-1 rounded"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search 9,000+ tools..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex h-[calc(90vh-140px)]">
+            {/* Sidebar */}
+            <div className="w-80 border-r border-gray-200 p-6 overflow-y-auto">
+              <div className="space-y-6">
+                {/* Tools Categories */}
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900 mb-3">Tools</h3>
+                  <div className="space-y-1">
+                    {categories.map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => setSelectedCategory(category.id)}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                          selectedCategory === category.id
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {category.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* By use case */}
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900 mb-3">By use case</h3>
+                  <div className="space-y-1">
+                    {useCaseCategories.map((category) => (
+                      <button
+                        key={category.id}
+                        className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        {category.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* By apps */}
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900 mb-3">By apps</h3>
+                  <div className="space-y-1">
+                    {appCategories.map((app) => (
+                      <button
+                        key={app.id}
+                        className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                      >
+                        <app.icon className="w-4 h-4" />
+                        {app.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="flex-1 p-6 overflow-y-auto">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Trending</h3>
+                <p className="text-gray-600">Popular tool templates from the community</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {trendingTools.map((tool) => (
+                  <div
+                    key={tool.id}
+                    onClick={() => {
+                      onSelectTool(tool);
+                      onClose();
+                    }}
+                    className="p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`w-12 h-12 ${tool.color} rounded-xl flex items-center justify-center`}>
+                        <tool.icon className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium text-gray-900">{tool.name}</h4>
+                          {tool.verified && (
+                            <div className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+                              Verified
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">{tool.description}</p>
+                        <p className="text-xs text-gray-500">by {tool.author}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    );
+  };
+
+  // New Tool Builder Component
+  const NewToolBuilder = ({ onClose }: { onClose: () => void }) => {
+    const [toolName, setToolName] = useState('');
+    const [toolDescription, setToolDescription] = useState('');
+    const [inputs, setInputs] = useState<any[]>([]);
+    const [steps, setSteps] = useState<any[]>([]);
+    const [showStepLibrary, setShowStepLibrary] = useState(false);
+
+    const inputTypes = [
+      { id: 'text', name: 'Text', icon: Type },
+      { id: 'long_text', name: 'Long text', icon: FileText },
+      { id: 'number', name: 'Number', icon: Hash },
+      { id: 'json', name: 'JSON', icon: Code },
+      { id: 'file_to_url', name: 'File to URL', icon: Link },
+      { id: 'table', name: 'Table', icon: Database },
+      { id: 'more', name: 'More', icon: Plus }
+    ];
+
+    const stepTypes = [
+      { id: 'llm', name: 'LLM', icon: Brain },
+      { id: 'knowledge', name: 'Knowledge', icon: BookOpen },
+      { id: 'google', name: 'Google', icon: Search },
+      { id: 'api', name: 'API', icon: Globe },
+      { id: 'python', name: 'Python', icon: Code }
+    ];
+
+    const addInput = (type: string) => {
+      const newInput = {
+        id: `input_${Date.now()}`,
+        type,
+        name: `${type} input`,
+        description: '',
+        required: false
+      };
+      setInputs(prev => [...prev, newInput]);
+    };
+
+    const addStep = (type: string) => {
+      const newStep = {
+        id: `step_${Date.now()}`,
+        type,
+        name: `${type} step`,
+        config: {}
+      };
+      setSteps(prev => [...prev, newStep]);
+      setShowStepLibrary(false);
+    };
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-white z-50"
+      >
+        {/* Header */}
+        <div className="border-b border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={onClose}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="text-sm">Tools</span>
+              </button>
+              <div className="text-gray-300">/</div>
+              <div className="text-gray-600">Untitled tool</div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                Save changes
+              </button>
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+                <Play className="w-4 h-4" />
+                Run tool
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 max-w-4xl mx-auto">
+          {/* Tool Header */}
+          <div className="mb-8">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                <Plus className="w-6 h-6 text-gray-600" />
+              </div>
+              <input
+                type="text"
+                value={toolName}
+                onChange={(e) => setToolName(e.target.value)}
+                placeholder="Type title..."
+                className="text-2xl font-semibold text-gray-900 bg-transparent border-none outline-none placeholder-gray-400"
+              />
+              <div className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded">
+                Unsaved
+              </div>
+            </div>
+            <input
+              type="text"
+              value={toolDescription}
+              onChange={(e) => setToolDescription(e.target.value)}
+              placeholder="Type short description..."
+              className="text-gray-600 bg-transparent border-none outline-none placeholder-gray-400 w-full"
+            />
+          </div>
+
+          {/* Inputs Section */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Inputs</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  Configure
+                </button>
+                <button className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center gap-2">
+                  <Bot className="w-4 h-4" />
+                  For Agent
+                </button>
+              </div>
+            </div>
+
+            <div className="text-sm text-gray-600 mb-4">Add type of input:</div>
+            
+            <div className="flex flex-wrap gap-3 mb-6">
+              {inputTypes.map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => addInput(type.id)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors flex items-center gap-2"
+                >
+                  <type.icon className="w-4 h-4" />
+                  {type.name}
+                </button>
+              ))}
+            </div>
+
+            {inputs.length > 0 && (
+              <div className="space-y-3">
+                {inputs.map((input) => (
+                  <div key={input.id} className="p-4 border border-gray-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium text-gray-900">{input.name}</h4>
+                        <p className="text-sm text-gray-600">{input.type}</p>
+                      </div>
+                      <button
+                        onClick={() => setInputs(prev => prev.filter(i => i.id !== input.id))}
+                        className="text-red-600 hover:text-red-700 p-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Steps Section */}
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Zap className="w-5 h-5 text-teal-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Steps</h3>
+            </div>
+            
+            <p className="text-gray-600 text-sm mb-6">
+              Define the logic of your tool. Chain together LLM prompts, call APIs, run code and more.
+            </p>
+
+            <div className="flex flex-wrap gap-3 mb-6">
+              <button
+                onClick={() => setShowStepLibrary(true)}
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Step
+              </button>
+              {stepTypes.map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => addStep(type.id)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors flex items-center gap-2"
+                >
+                  <type.icon className="w-4 h-4" />
+                  {type.name}
+                </button>
+              ))}
+            </div>
+
+            {steps.length > 0 && (
+              <div className="space-y-3">
+                {steps.map((step) => (
+                  <div key={step.id} className="p-4 border border-gray-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium text-gray-900">{step.name}</h4>
+                        <p className="text-sm text-gray-600">{step.type}</p>
+                      </div>
+                      <button
+                        onClick={() => setSteps(prev => prev.filter(s => s.id !== step.id))}
+                        className="text-red-600 hover:text-red-700 p-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Step Library Modal */}
+        {showStepLibrary && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 z-60 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden"
+            >
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Add Step</h3>
+                  <button
+                    onClick={() => setShowStepLibrary(false)}
+                    className="text-gray-400 hover:text-gray-600 p-1 rounded"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Search 9,000+ tool steps..."
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="p-6 overflow-y-auto max-h-[60vh]">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { id: 'api', name: 'API', description: 'Run an API request', verified: true, icon: Globe },
+                    { id: 'extract_website', name: 'Extract website content', description: 'Scrape and access website content from a link or URL', verified: true, icon: ExternalLink },
+                    { id: 'google_search', name: 'Google Search', description: 'Search the web for keywords using Google and get the top website results', verified: true, icon: Search },
+                    { id: 'javascript', name: 'Javascript Code', description: 'Run Javascript code', verified: true, icon: Code },
+                    { id: 'llm', name: 'LLM', description: 'Use a large language model such as GPT', verified: true, icon: Brain },
+                    { id: 'llm_vision', name: 'LLM Vision', description: 'Use a large multimodal model such as GPT4o or Gemini 1.5 Pro', verified: true, icon: Eye },
+                    { id: 'note', name: 'Note', description: 'Insert markdown notes', verified: true, icon: FileText },
+                    { id: 'python', name: 'Python Code', description: 'Run Python code', verified: true, icon: Code }
+                  ].map((step) => (
+                    <div
+                      key={step.id}
+                      onClick={() => addStep(step.id)}
+                      className="p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <step.icon className="w-5 h-5 text-gray-600" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-medium text-gray-900">{step.name}</h4>
+                            {step.verified && (
+                              <div className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+                                Verified
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600">{step.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </motion.div>
+    );
+  };
+
+  // Knowledge Wizard Component
+  const KnowledgeWizard = ({ onClose }: { onClose: () => void }) => {
+    const [currentStep, setCurrentStep] = useState(0);
+    const [selectedKnowledgeBase, setSelectedKnowledgeBase] = useState('');
+    const [selectedResources, setSelectedResources] = useState<string[]>([]);
+
+    const steps = [
+      { id: 'knowledge_base', title: 'Select Knowledge Base', icon: Database },
+      { id: 'resources', title: 'Choose Resources', icon: FolderOpen },
+      { id: 'review', title: 'Review & Add', icon: CheckCircle }
+    ];
+
+    // Mock knowledge bases - replace with actual Supabase query
+    const knowledgeBases = [
+      { id: 'kb1', name: 'Marketing Knowledge', description: 'Marketing strategies and content', resourceCount: 45 },
+      { id: 'kb2', name: 'Product Documentation', description: 'Product guides and tutorials', resourceCount: 23 },
+      { id: 'kb3', name: 'Customer Support', description: 'Support articles and FAQs', resourceCount: 67 }
+    ];
+
+    // Mock resources - replace with actual Supabase query based on selected knowledge base
+    const resources = [
+      { id: 'res1', name: 'Social Media Strategy Guide', type: 'document', size: '2.3 MB' },
+      { id: 'res2', name: 'Content Calendar Template', type: 'spreadsheet', size: '1.1 MB' },
+      { id: 'res3', name: 'Brand Guidelines', type: 'document', size: '5.7 MB' },
+      { id: 'res4', name: 'Marketing Metrics Dashboard', type: 'data', size: '890 KB' }
+    ];
+
+    const handleAddKnowledge = () => {
+      const knowledgeBase = knowledgeBases.find(kb => kb.id === selectedKnowledgeBase);
+      const selectedResourceItems = resources.filter(r => selectedResources.includes(r.id));
+      
+      addKnowledgeItem({
+        type: 'knowledge_base',
+        name: `${knowledgeBase?.name} - ${selectedResourceItems.length} resources`,
+        description: `Selected ${selectedResourceItems.length} resources from ${knowledgeBase?.name}`,
+        source: selectedKnowledgeBase,
+        metadata: {
+          knowledgeBaseId: selectedKnowledgeBase,
+          resourceIds: selectedResources,
+          resources: selectedResourceItems
+        }
+      });
+      onClose();
+    };
+
+    const renderStepContent = () => {
+      switch (currentStep) {
+        case 0:
+          return (
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Database className="w-8 h-8 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Knowledge Base</h3>
+                <p className="text-gray-600">Choose a knowledge base to import resources from</p>
+              </div>
+
+              <div className="space-y-3">
+                {knowledgeBases.map((kb) => (
+                  <div
+                    key={kb.id}
+                    onClick={() => setSelectedKnowledgeBase(kb.id)}
+                    className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                      selectedKnowledgeBase === kb.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-4 h-4 rounded-full border-2 ${
+                        selectedKnowledgeBase === kb.id ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                      }`}>
+                        {selectedKnowledgeBase === kb.id && <div className="w-2 h-2 bg-white rounded-full m-0.5" />}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">{kb.name}</h4>
+                        <p className="text-sm text-gray-600">{kb.description}</p>
+                        <p className="text-xs text-gray-500 mt-1">{kb.resourceCount} resources</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+
+        case 1:
+          return (
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Choose Resources</h3>
+                <p className="text-gray-600">Select the resources you want to add to your agent</p>
+              </div>
+
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {resources.map((resource) => (
+                  <div
+                    key={resource.id}
+                    onClick={() => {
+                      setSelectedResources(prev => 
+                        prev.includes(resource.id) 
+                          ? prev.filter(id => id !== resource.id)
+                          : [...prev, resource.id]
+                      );
+                    }}
+                    className={`p-3 border rounded-lg cursor-pointer transition-all ${
+                      selectedResources.includes(resource.id) ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-4 h-4 rounded border ${
+                        selectedResources.includes(resource.id) ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
+                      }`}>
+                        {selectedResources.includes(resource.id) && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">{resource.name}</h4>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <span className="capitalize">{resource.type}</span>
+                          <span>•</span>
+                          <span>{resource.size}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+
+        case 2:
+          const knowledgeBase = knowledgeBases.find(kb => kb.id === selectedKnowledgeBase);
+          const selectedResourceItems = resources.filter(r => selectedResources.includes(r.id));
+          
+          return (
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Review & Add</h3>
+                <p className="text-gray-600">Confirm the knowledge resources to add to your agent</p>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-6 space-y-4">
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">Knowledge Base</h4>
+                  <p className="text-gray-700">{knowledgeBase?.name}</p>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Selected Resources ({selectedResourceItems.length})</h4>
+                  <div className="space-y-2">
+                    {selectedResourceItems.map((resource) => (
+                      <div key={resource.id} className="flex items-center justify-between py-2 px-3 bg-white rounded-lg border border-gray-200">
+                        <span className="text-sm font-medium text-gray-900">{resource.name}</span>
+                        <span className="text-xs text-gray-500">{resource.size}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+
+        default:
+          return null;
+      }
+    };
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+        >
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={onClose}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="text-sm">Back</span>
+              </button>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Progress Steps */}
+            <div className="flex items-center justify-between">
+              {steps.map((step, index) => (
+                <div key={step.id} className="flex items-center">
+                  <div className={`flex items-center gap-3 ${index <= currentStep ? 'text-blue-600' : 'text-gray-400'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                      index < currentStep 
+                        ? 'bg-blue-600 border-blue-600 text-white' 
+                        : index === currentStep 
+                        ? 'border-blue-600 text-blue-600' 
+                        : 'border-gray-300 text-gray-400'
+                    }`}>
+                      {index < currentStep ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <step.icon className="w-4 h-4" />
+                      )}
+                    </div>
+                    <span className="text-sm font-medium hidden sm:block">{step.title}</span>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className={`w-12 h-0.5 mx-4 ${index < currentStep ? 'bg-blue-600' : 'bg-gray-300'}`} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+            {renderStepContent()}
+          </div>
+
+          {/* Footer */}
+          <div className="p-6 border-t border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                disabled={currentStep === 0}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              
+              <div className="flex items-center gap-3">
+                {currentStep < steps.length - 1 ? (
+                  <button
+                    onClick={() => setCurrentStep(currentStep + 1)}
+                    disabled={
+                      (currentStep === 0 && !selectedKnowledgeBase) ||
+                      (currentStep === 1 && selectedResources.length === 0)
+                    }
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleAddKnowledge}
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Add Knowledge
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    );
+  };
+
+  // Text Editor Modal Component
+  const TextEditorModal = ({ onClose }: { onClose: () => void }) => {
+    const [textContent, setTextContent] = useState('');
+    const [title, setTitle] = useState('');
+
+    const handleSave = () => {
+      if (textContent.trim()) {
+        addKnowledgeItem({
+          type: 'text',
+          name: title || 'Text Knowledge',
+          description: textContent.substring(0, 100) + (textContent.length > 100 ? '...' : ''),
+          source: 'manual_entry',
+          metadata: { content: textContent, wordCount: textContent.split(' ').length }
+        });
+        onClose();
+      }
+    };
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+        >
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">Add Text Knowledge</h2>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Title
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter a title for this knowledge..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Content
+              </label>
+              <textarea
+                value={textContent}
+                onChange={(e) => setTextContent(e.target.value)}
+                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                rows={12}
+                placeholder="Enter your text content here..."
+              />
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="p-6 border-t border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-500">
+                {textContent.split(' ').filter(word => word.length > 0).length} words
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={!textContent.trim()}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Add Knowledge
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    );
+  };
+
   // Tools Tab Component
   const ToolsTab = () => {
     return (
@@ -2011,44 +2365,6 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
 
   // Knowledge Tab Component
   const KnowledgeTab = () => {
-    const removeKnowledgeItem = (itemId: string) => {
-      setAgentKnowledge(prev => prev.filter(item => item.id !== itemId));
-    };
-
-    const getKnowledgeIcon = (type: string) => {
-      switch (type) {
-        case 'file':
-          return File;
-        case 'text':
-          return Type;
-        case 'website':
-          return Globe;
-        case 'social_media':
-          return Instagram;
-        case 'knowledge_base':
-          return Database;
-        default:
-          return FileText;
-      }
-    };
-
-    const getKnowledgeColor = (type: string) => {
-      switch (type) {
-        case 'file':
-          return 'bg-blue-100 text-blue-600';
-        case 'text':
-          return 'bg-green-100 text-green-600';
-        case 'website':
-          return 'bg-purple-100 text-purple-600';
-        case 'social_media':
-          return 'bg-pink-100 text-pink-600';
-        case 'knowledge_base':
-          return 'bg-orange-100 text-orange-600';
-        default:
-          return 'bg-gray-100 text-gray-600';
-      }
-    };
-
     return (
       <div className="space-y-8">
         {/* Header */}
@@ -2061,103 +2377,98 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
         <div className="bg-white rounded-xl border border-gray-200 p-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Upload knowledge</h3>
           
-          {/* Upload Area */}
-          <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center mb-6 hover:border-gray-400 transition-colors">
+          {/* File Upload Area */}
+          <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center mb-6">
             <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <div className="mb-2">
-              <span className="text-gray-700">Drag & drop or </span>
-              <button className="text-blue-600 hover:text-blue-700 font-medium">choose files</button>
-              <span className="text-gray-700"> to upload.</span>
-            </div>
+            <p className="text-gray-700 mb-2">
+              Drag & drop or <button className="text-blue-600 hover:text-blue-700">choose files</button> to upload.
+            </p>
             <p className="text-sm text-gray-500 mb-1">
               Supported formats: .csv, .json, .pdf, .xlsx, .xls, .txt, .md, .docx, .pptx.
             </p>
             <p className="text-sm text-gray-500">Max 5 files per upload.</p>
           </div>
 
+          <div className="text-center text-gray-500 mb-6">or</div>
+
           {/* Action Buttons */}
-          <div className="flex items-center gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <button
-              onClick={() => setShowExistingKnowledgeWizard(true)}
-              className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              onClick={() => setShowKnowledgeWizard(true)}
+              className="p-4 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-center"
             >
-              <Database className="w-5 h-5 text-gray-600" />
-              Add existing knowledge
+              <Database className="w-6 h-6 text-gray-600 mx-auto mb-2" />
+              <span className="text-sm font-medium text-gray-900">Add existing knowledge</span>
             </button>
-            
+
             <button
-              onClick={() => setShowSocialMediaImport(true)}
-              className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              onClick={() => setShowUrlImport(true)}
+              className="p-4 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-center"
             >
-              <Globe className="w-5 h-5 text-gray-600" />
-              Import Social Media Content
+              <Globe className="w-6 h-6 text-gray-600 mx-auto mb-2" />
+              <span className="text-sm font-medium text-gray-900">Import URL</span>
             </button>
-            
+
+            <button
+              onClick={() => setShowSocialMediaWizard(true)}
+              className="p-4 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-center"
+            >
+              <Instagram className="w-6 h-6 text-gray-600 mx-auto mb-2" />
+              <span className="text-sm font-medium text-gray-900">Import Social Media Content</span>
+            </button>
+
             <button
               onClick={() => setShowTextEditor(true)}
-              className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="p-4 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-center"
             >
-              <Type className="w-5 h-5 text-gray-600" />
-              Text
+              <Type className="w-6 h-6 text-gray-600 mx-auto mb-2" />
+              <span className="text-sm font-medium text-gray-900">Text</span>
             </button>
           </div>
         </div>
 
         {/* Knowledge Items List */}
-        {agentKnowledge.length > 0 && (
+        {knowledgeItems.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Added Knowledge ({agentKnowledge.length})</h3>
-              <button className="text-sm text-gray-600 hover:text-gray-800 transition-colors">
-                Clear all
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900">Added Knowledge ({knowledgeItems.length})</h3>
+              <button className="text-sm text-blue-600 hover:text-blue-700">
+                Manage all
               </button>
             </div>
-            
+
             <div className="space-y-3">
-              {agentKnowledge.map((item) => {
-                const KnowledgeIcon = getKnowledgeIcon(item.type);
-                const colorClass = getKnowledgeColor(item.type);
-                
-                return (
-                  <div key={item.id} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorClass}`}>
-                      <KnowledgeIcon className="w-5 h-5" />
+              {knowledgeItems.map((item) => (
+                <div key={item.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                      {item.type === 'url' && <Globe className="w-5 h-5 text-gray-600" />}
+                      {item.type === 'social_media' && <Instagram className="w-5 h-5 text-gray-600" />}
+                      {item.type === 'text' && <Type className="w-5 h-5 text-gray-600" />}
+                      {item.type === 'knowledge_base' && <Database className="w-5 h-5 text-gray-600" />}
+                      {item.type === 'file' && <FileText className="w-5 h-5 text-gray-600" />}
                     </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
-                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                        <span>{item.source}</span>
-                        {item.size && (
-                          <>
-                            <span>•</span>
-                            <span>{item.size}</span>
-                          </>
-                        )}
-                        <span>•</span>
-                        <span>{new Date(item.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      {item.type === 'file' && (
-                        <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                          <Download className="w-4 h-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => removeKnowledgeItem(item.id)}
-                        className="p-2 text-red-400 hover:text-red-600 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <div>
+                      <h4 className="font-medium text-gray-900">{item.name}</h4>
+                      <p className="text-sm text-gray-600">{item.description}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Added {new Date(item.addedAt).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
-                );
-              })}
+                  <div className="flex items-center gap-2">
+                    <button className="p-2 text-gray-400 hover:text-gray-600 rounded">
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => removeKnowledgeItem(item.id)}
+                      className="p-2 text-red-400 hover:text-red-600 rounded"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -2298,25 +2609,45 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
             }}
           />
         )}
-        
+
         {showToolLibrary && (
-          <ToolLibrary onClose={() => setShowToolLibrary(false)} />
+          <ToolLibraryModal
+            onClose={() => setShowToolLibrary(false)}
+            onSelectTool={(tool) => {
+              // Handle tool selection
+              setShowToolLibrary(false);
+            }}
+          />
         )}
-        
+
         {showNewToolBuilder && (
-          <NewToolBuilder onClose={() => setShowNewToolBuilder(false)} />
+          <NewToolBuilder
+            onClose={() => setShowNewToolBuilder(false)}
+          />
         )}
-        
-        {showSocialMediaImport && (
-          <SocialMediaImportWizard onClose={() => setShowSocialMediaImport(false)} />
+
+        {showKnowledgeWizard && (
+          <KnowledgeWizard
+            onClose={() => setShowKnowledgeWizard(false)}
+          />
         )}
-        
-        {showExistingKnowledgeWizard && (
-          <ExistingKnowledgeWizard onClose={() => setShowExistingKnowledgeWizard(false)} />
+
+        {showSocialMediaWizard && (
+          <SocialMediaWizard
+            onClose={() => setShowSocialMediaWizard(false)}
+          />
         )}
-        
+
         {showTextEditor && (
-          <TextEditorModal onClose={() => setShowTextEditor(false)} />
+          <TextEditorModal
+            onClose={() => setShowTextEditor(false)}
+          />
+        )}
+
+        {showUrlImport && (
+          <UrlImportWizard
+            onClose={() => setShowUrlImport(false)}
+          />
         )}
       </AnimatePresence>
     </div>
