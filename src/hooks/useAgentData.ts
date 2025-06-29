@@ -35,7 +35,7 @@ export const useAgentData = (agentId: string) => {
 
         if (agentError) throw agentError;
 
-        // Fetch tools with templates using the new foreign key relationship
+        // Fetch tools with templates using the foreign key relationship
         const { data: tools, error: toolsError } = await supabase
           .from('agent_tools')
           .select(`
@@ -44,7 +44,35 @@ export const useAgentData = (agentId: string) => {
           `)
           .eq('agent_id', agentId);
 
-        if (toolsError) throw toolsError;
+        if (toolsError) {
+          console.warn('Error fetching tools with templates, falling back to basic query:', toolsError);
+          // Fallback to basic query without join
+          const { data: basicTools, error: basicError } = await supabase
+            .from('agent_tools')
+            .select('*')
+            .eq('agent_id', agentId);
+          
+          if (basicError) throw basicError;
+          
+          // Fetch templates separately
+          const { data: templates } = await supabase
+            .from('tool_templates')
+            .select('*');
+          
+          // Match tools with templates
+          const toolsWithTemplates = (basicTools || []).map(tool => ({
+            ...tool,
+            tool_template: templates?.find(t => t.id === tool.tool_template_id) || null
+          }));
+          
+          setAgent({ 
+            ...agentData, 
+            tools: toolsWithTemplates,
+            knowledgeBases: []
+          });
+          setLoading(false);
+          return;
+        }
 
         // Fetch knowledge bases
         const { data: knowledgeBases, error: knowledgeError } = await supabase
