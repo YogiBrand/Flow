@@ -371,7 +371,7 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
   const [showStepConfig, setShowStepConfig] = useState(false);
   const [selectedStepForConfig, setSelectedStepForConfig] = useState<Tool | null>(null);
 
-  const [currentAgent] = useState({
+  const [currentAgent, setCurrentAgent] = useState({
     id: `agent_${Date.now()}`,
     name: 'Marketing Agent',
     description: 'Automate your marketing workflows with intelligent lead processing and engagement.',
@@ -496,6 +496,40 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
             letAgentDecide: false
           }
         ]
+      },
+      // Add new step types
+      {
+        id: 'ai_prompt',
+        name: 'AI Prompt',
+        description: 'Use a LLM as a step in your tools for reasoning, classification, and text generation',
+        category: 'AI',
+        enabled: false,
+        icon: Brain,
+        color: 'bg-purple-500',
+        type: 'ai_prompt',
+        inputs: []
+      },
+      {
+        id: 'google_search',
+        name: 'Google Search',
+        description: 'Search Google for real-time information',
+        category: 'Search',
+        enabled: false,
+        icon: Search,
+        color: 'bg-blue-500',
+        type: 'google_search',
+        inputs: []
+      },
+      {
+        id: 'knowledge_search',
+        name: 'Knowledge Search',
+        description: 'Search through your knowledge base',
+        category: 'Knowledge',
+        enabled: false,
+        icon: FileText,
+        color: 'bg-green-500',
+        type: 'knowledge_search',
+        inputs: []
       }
     ]
   });
@@ -554,7 +588,12 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
   ];
 
   const toggleToolEnabled = (toolId: string) => {
-    // Tool toggle logic here
+    setCurrentAgent(prev => ({
+      ...prev,
+      tools: prev.tools.map(t => 
+        t.id === toolId ? { ...t, enabled: !t.enabled } : t
+      )
+    }));
   };
 
   const getInputIcon = (type: string) => {
@@ -884,8 +923,15 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
                 </div>
                 <button
                   onClick={() => {
-                    setSelectedStepForConfig(tool);
-                    setShowStepConfig(true);
+                    // Check if this is a new step type that needs step configuration
+                    if (['ai_prompt', 'google_search', 'knowledge_search'].includes(tool.type)) {
+                      setSelectedStepForConfig(tool);
+                      setShowStepConfig(true);
+                    } else {
+                      // Use the original tool wizard for existing tools
+                      setSelectedTool(tool);
+                      setShowToolWizard(true);
+                    }
                   }}
                   className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                 >
