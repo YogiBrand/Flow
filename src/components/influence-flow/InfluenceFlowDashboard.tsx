@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import MessagingWorkflowBuilder from './MessagingWorkflowBuilder';
 import AIAgentBuilder from './AIAgentBuilder';
-import AIAgentBuilderPerfect from './AIAgentBuilderPerfect';
+import AIAgentBuilderExact from './AIAgentBuilderExact';
 import { MessagingWorkflow, AIAgent } from '../../types/influenceFlow';
 import { useAuth } from '../../hooks/useAuth';
 import { AgentService } from '../../services/agentService';
@@ -26,10 +26,10 @@ import { supabase } from '../../lib/supabase';
 
 const InfluenceFlowDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'workflows' | 'agents' | 'analytics'>('workflows');
+  const [activeTab, setActiveTab] = useState<'workflows' | 'agents' | 'analytics'>('agents');
   const [showWorkflowBuilder, setShowWorkflowBuilder] = useState(false);
   const [showAgentBuilder, setShowAgentBuilder] = useState(false);
-  const [showPerfectAgentBuilder, setShowPerfectAgentBuilder] = useState(false);
+  const [showExactAgentBuilder, setShowExactAgentBuilder] = useState(false);
   const [selectedWorkflow, setSelectedWorkflow] = useState<MessagingWorkflow | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<AIAgent | null>(null);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
@@ -277,12 +277,12 @@ const InfluenceFlowDashboard: React.FC = () => {
     );
   }
 
-  if (showPerfectAgentBuilder) {
+  if (showExactAgentBuilder) {
     return (
-      <AIAgentBuilderPerfect
+      <AIAgentBuilderExact
         agentId={selectedAgentId || undefined}
         onBack={() => {
-          setShowPerfectAgentBuilder(false);
+          setShowExactAgentBuilder(false);
           setSelectedAgentId(null);
           loadAgents(); // Reload agents when coming back
         }}
@@ -308,7 +308,7 @@ const InfluenceFlowDashboard: React.FC = () => {
               New Workflow
             </button>
             <button
-              onClick={() => setShowPerfectAgentBuilder(true)}
+              onClick={() => setShowExactAgentBuilder(true)}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center gap-2"
             >
               <Bot className="w-4 h-4" />
@@ -401,7 +401,7 @@ const InfluenceFlowDashboard: React.FC = () => {
             loading={loading}
             onEditAgent={(agent) => {
               setSelectedAgentId(agent.id);
-              setShowPerfectAgentBuilder(true);
+              setShowExactAgentBuilder(true);
             }}
           />
         )}
