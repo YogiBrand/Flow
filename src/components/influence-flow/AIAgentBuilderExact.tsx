@@ -37,6 +37,76 @@ interface AIAgentBuilderExactProps {
   onBack: () => void;
 }
 
+// Separate component for text knowledge wizard
+const TextKnowledgeWizard: React.FC<{
+  onAddKnowledge: (data: any) => void;
+  onCancel: () => void;
+}> = ({ onAddKnowledge, onCancel }) => {
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const wordCount = content.split(/\s+/).filter(word => word.length > 0).length;
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <FileText className="w-8 h-8 text-blue-600" />
+        </div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">Add Text Knowledge</h3>
+        <p className="text-gray-600">Enter text content to add to your agent's knowledge base</p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Enter a title for this knowledge..."
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Enter your text content here..."
+          rows={8}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+        />
+        <div className="text-xs text-gray-500 mt-1">{wordCount} words</div>
+      </div>
+
+      <div className="flex justify-end space-x-3">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => {
+            if (title.trim() && content.trim()) {
+              onAddKnowledge({
+                name: title,
+                type: 'text',
+                content: content,
+                metadata: { source: 'manual_text', wordCount }
+              });
+            }
+          }}
+          disabled={!title.trim() || !content.trim()}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Add Knowledge
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBack }) => {
   const { user } = useAuth();
   const { agent, loading } = useAgentData(agentId || '');
@@ -651,75 +721,6 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
     }
   };
 
-  const renderTextKnowledgeWizard = () => {
-    const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
-    const wordCount = content.split(/\s+/).filter(word => word.length > 0).length;
-
-    return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FileText className="w-8 h-8 text-blue-600" />
-          </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Add Text Knowledge</h3>
-          <p className="text-gray-600">Enter text content to add to your agent's knowledge base</p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter a title for this knowledge..."
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Enter your text content here..."
-            rows={8}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-          />
-          <div className="text-xs text-gray-500 mt-1">{wordCount} words</div>
-        </div>
-
-        <div className="flex justify-end space-x-3">
-          <button
-            onClick={() => {
-              setShowKnowledgeModal(false);
-              setKnowledgeWizardType(null);
-            }}
-            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => {
-              if (title.trim() && content.trim()) {
-                addKnowledgeToAgent({
-                  name: title,
-                  type: 'text',
-                  content: content,
-                  metadata: { source: 'manual_text', wordCount }
-                });
-              }
-            }}
-            disabled={!title.trim() || !content.trim()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Add Knowledge
-          </button>
-        </div>
-      </div>
-    );
-  };
-
   const renderKnowledgeWizard = () => {
     if (!knowledgeWizardType) return null;
 
@@ -879,7 +880,15 @@ const AIAgentBuilderExact: React.FC<AIAgentBuilderExactProps> = ({ agentId, onBa
             {knowledgeWizardType === 'existing' && renderExistingKnowledgeWizard()}
             {knowledgeWizardType === 'url' && renderUrlImportWizard()}
             {knowledgeWizardType === 'social' && renderSocialMediaWizard()}
-            {knowledgeWizardType === 'text' && renderTextKnowledgeWizard()}
+            {knowledgeWizardType === 'text' && (
+              <TextKnowledgeWizard
+                onAddKnowledge={addKnowledgeToAgent}
+                onCancel={() => {
+                  setShowKnowledgeModal(false);
+                  setKnowledgeWizardType(null);
+                }}
+              />
+            )}
           </div>
 
           {/* Footer */}
