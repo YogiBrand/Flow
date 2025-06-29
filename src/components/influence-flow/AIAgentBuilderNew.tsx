@@ -45,7 +45,24 @@ import {
   Briefcase,
   ArrowLeft,
   CheckCircle,
-  Circle
+  Circle,
+  TrendingUp,
+  Star,
+  Folder,
+  Phone,
+  Calendar as CalendarIcon,
+  FileSpreadsheet,
+  Image,
+  Video,
+  Mic,
+  Camera,
+  Shield,
+  Key,
+  Cpu,
+  BarChart,
+  PieChart,
+  LineChart,
+  Activity
 } from 'lucide-react';
 
 interface AIAgentBuilderNewProps {
@@ -76,10 +93,23 @@ interface Tool {
   color: string;
 }
 
+interface AvailableTool {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  icon: any;
+  color: string;
+  provider: string;
+  trending?: boolean;
+  popular?: boolean;
+}
+
 const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) => {
   const [activeTab, setActiveTab] = useState('tools');
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [showToolWizard, setShowToolWizard] = useState(false);
+  const [showToolLibrary, setShowToolLibrary] = useState(false);
 
   const [currentAgent] = useState({
     id: `agent_${Date.now()}`,
@@ -206,6 +236,166 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
     ]
   });
 
+  // Available tools for the library
+  const availableTools: AvailableTool[] = [
+    // Trending Tools
+    {
+      id: 'knowledge_base_search',
+      name: 'Add Answer to Knowledge Base',
+      description: 'Search and retrieve information from knowledge bases',
+      category: 'Knowledge',
+      icon: Brain,
+      color: 'bg-green-500',
+      provider: 'Relevance AI',
+      trending: true
+    },
+    {
+      id: 'notion_comment',
+      name: 'Add Comment to Notion',
+      description: 'Add comments and notes to Notion pages',
+      category: 'Communications',
+      icon: FileText,
+      color: 'bg-gray-800',
+      provider: 'Relevance AI'
+    },
+    {
+      id: 'trello_comment',
+      name: 'Add Comment to Trello Card',
+      description: 'Add comments to Trello cards for project management',
+      category: 'Communications',
+      icon: Briefcase,
+      color: 'bg-blue-600',
+      provider: 'Relevance AI'
+    },
+    {
+      id: 'google_reviews',
+      name: 'Add Google Play Store Reviews to Knowledge',
+      description: 'Extract and analyze Google Play Store reviews',
+      category: 'Data scraper',
+      icon: Star,
+      color: 'bg-yellow-500',
+      provider: 'Relevance AI'
+    },
+    {
+      id: 'faq_entry',
+      name: 'Add FAQ Entry to Knowledge Base',
+      description: 'Create and manage FAQ entries in knowledge bases',
+      category: 'Knowledge',
+      icon: MessageSquare,
+      color: 'bg-orange-500',
+      provider: 'Relevance AI'
+    },
+    {
+      id: 'email_campaign',
+      name: 'Add Lead to Email Campaign',
+      description: 'Add qualified leads to email marketing campaigns',
+      category: 'CRM',
+      icon: Mail,
+      color: 'bg-blue-500',
+      provider: 'Relevance AI'
+    },
+    {
+      id: 'linkedin_employees',
+      name: 'Add LinkedIn Employees to Knowledge',
+      description: 'Extract employee data from LinkedIn company pages',
+      category: 'Data scraper',
+      icon: Linkedin,
+      color: 'bg-blue-700',
+      provider: 'Relevance AI'
+    },
+    {
+      id: 'linear_tickets',
+      name: 'Add Linear Tickets to Knowledge Base',
+      description: 'Import and organize Linear tickets in knowledge base',
+      category: 'Knowledge',
+      icon: Target,
+      color: 'bg-purple-600',
+      provider: 'Relevance AI'
+    },
+    {
+      id: 'slack_threads',
+      name: 'Add Slack Threads to Knowledge',
+      description: 'Archive important Slack conversations to knowledge base',
+      category: 'Communications',
+      icon: Slack,
+      color: 'bg-green-600',
+      provider: 'Relevance AI'
+    },
+    {
+      id: 'steam_reviews',
+      name: 'Add Steam Game Reviews to Knowledge',
+      description: 'Collect and analyze Steam game reviews',
+      category: 'Data scraper',
+      icon: Activity,
+      color: 'bg-gray-700',
+      provider: 'Relevance AI'
+    },
+    {
+      id: 'candidate_tags',
+      name: 'Add Tags and Note to Candidate in Ashby',
+      description: 'Tag and annotate candidates in Ashby ATS',
+      category: 'CRM',
+      icon: User,
+      color: 'bg-indigo-500',
+      provider: 'Relevance AI'
+    },
+    // Additional tools by category
+    {
+      id: 'hubspot_contact',
+      name: 'Create HubSpot Contact',
+      description: 'Create new contacts in HubSpot CRM',
+      category: 'CRM',
+      icon: Building,
+      color: 'bg-orange-600',
+      provider: 'HubSpot'
+    },
+    {
+      id: 'google_calendar',
+      name: 'Schedule Google Calendar Event',
+      description: 'Create calendar events and schedule meetings',
+      category: 'Calendar',
+      icon: CalendarIcon,
+      color: 'bg-blue-500',
+      provider: 'Google Calendar'
+    },
+    {
+      id: 'outlook_email',
+      name: 'Send Outlook Email',
+      description: 'Send emails through Outlook',
+      category: 'Communications',
+      icon: Mail,
+      color: 'bg-blue-600',
+      provider: 'Outlook'
+    },
+    {
+      id: 'web_scraper',
+      name: 'Web Scraper',
+      description: 'Extract data from any website',
+      category: 'Data scraper',
+      icon: Globe,
+      color: 'bg-gray-600',
+      provider: 'Built-in'
+    },
+    {
+      id: 'api_call',
+      name: 'HTTP API Call',
+      description: 'Make HTTP requests to external APIs',
+      category: 'Data scraper',
+      icon: Webhook,
+      color: 'bg-purple-500',
+      provider: 'Built-in'
+    },
+    {
+      id: 'data_analysis',
+      name: 'Data Analysis',
+      description: 'Analyze and process structured data',
+      category: 'Data scraper',
+      icon: BarChart,
+      color: 'bg-green-500',
+      provider: 'Built-in'
+    }
+  ];
+
   const tabs = [
     { id: 'prompt', label: 'Prompt', icon: Brain, color: 'text-purple-600' },
     { id: 'tools', label: 'Tools', icon: Zap, color: 'text-blue-600' },
@@ -233,6 +423,271 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
       default:
         return FileText;
     }
+  };
+
+  // Tool Library Component
+  const ToolLibrary = ({ onClose, onSelectTools }: { onClose: () => void; onSelectTools: (tools: AvailableTool[]) => void }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('All tools');
+    const [selectedTools, setSelectedTools] = useState<Set<string>>(new Set());
+
+    const categories = [
+      { id: 'All tools', label: 'All tools', icon: Folder },
+      { id: 'Trending', label: 'Trending', icon: TrendingUp },
+      { id: 'Your tools', label: 'Your tools', icon: User },
+      { id: 'Communications', label: 'Communications', icon: MessageSquare },
+      { id: 'CRM', label: 'CRM', icon: Users },
+      { id: 'Calendar', label: 'Calendar', icon: CalendarIcon },
+      { id: 'Data scraper', label: 'Data scraper', icon: Database },
+      { id: 'Handle files', label: 'Handle files', icon: FileText },
+      { id: 'Knowledge', label: 'Knowledge', icon: Brain }
+    ];
+
+    const appCategories = [
+      { id: 'Gmail', label: 'Gmail', icon: Mail, color: 'text-red-500' },
+      { id: 'Google Calendar', label: 'Google Calendar', icon: CalendarIcon, color: 'text-blue-500' },
+      { id: 'HubSpot', label: 'HubSpot', icon: Building, color: 'text-orange-500' },
+      { id: 'Outlook', label: 'Outlook', icon: Mail, color: 'text-blue-600' },
+      { id: 'LinkedIn', label: 'LinkedIn', icon: Linkedin, color: 'text-blue-700' },
+      { id: 'Notion', label: 'Notion', icon: FileText, color: 'text-gray-800' },
+      { id: 'Slack', label: 'Slack', icon: Slack, color: 'text-green-600' }
+    ];
+
+    const filteredTools = availableTools.filter(tool => {
+      const matchesSearch = tool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           tool.description.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      if (selectedCategory === 'All tools') return matchesSearch;
+      if (selectedCategory === 'Trending') return matchesSearch && tool.trending;
+      if (selectedCategory === 'Your tools') return matchesSearch && false; // No user tools for now
+      
+      return matchesSearch && tool.category === selectedCategory;
+    });
+
+    const toggleToolSelection = (toolId: string) => {
+      const newSelected = new Set(selectedTools);
+      if (newSelected.has(toolId)) {
+        newSelected.delete(toolId);
+      } else {
+        newSelected.add(toolId);
+      }
+      setSelectedTools(newSelected);
+    };
+
+    const handleAddTools = () => {
+      const toolsToAdd = availableTools.filter(tool => selectedTools.has(tool.id));
+      onSelectTools(toolsToAdd);
+      onClose();
+    };
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          className="bg-white rounded-2xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex"
+        >
+          {/* Left Sidebar */}
+          <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">Tools</h2>
+                <button
+                  onClick={onClose}
+                  className="text-gray-400 hover:text-gray-600 p-1 rounded"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search 9,000+ tools..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                />
+              </div>
+              
+              <button className="w-full mt-3 px-4 py-2 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium flex items-center justify-center gap-2">
+                <Plus className="w-4 h-4" />
+                New tool
+              </button>
+            </div>
+
+            {/* Categories */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-4">
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Tools</div>
+                <div className="space-y-1">
+                  {categories.map((category) => (
+                    <button
+                      key={category.id}
+                      onClick={() => setSelectedCategory(category.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                        selectedCategory === category.id
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <category.icon className="w-4 h-4" />
+                      {category.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3 mt-6">By use case</div>
+                <div className="space-y-1">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
+                    <MessageSquare className="w-4 h-4" />
+                    Communications
+                  </button>
+                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
+                    <Users className="w-4 h-4" />
+                    CRM
+                  </button>
+                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
+                    <CalendarIcon className="w-4 h-4" />
+                    Calendar
+                  </button>
+                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
+                    <Database className="w-4 h-4" />
+                    Data scraper
+                  </button>
+                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
+                    <FileText className="w-4 h-4" />
+                    Handle files
+                  </button>
+                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
+                    <Brain className="w-4 h-4" />
+                    Knowledge
+                  </button>
+                </div>
+
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3 mt-6">By apps</div>
+                <div className="space-y-1">
+                  {appCategories.map((app) => (
+                    <button
+                      key={app.id}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <app.icon className={`w-4 h-4 ${app.color}`} />
+                      {app.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {selectedCategory === 'Trending' ? 'Trending' : selectedCategory}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {selectedCategory === 'Trending' 
+                      ? 'Popular tool templates from the community'
+                      : `Browse ${filteredTools.length} available tools`
+                    }
+                  </p>
+                </div>
+                {selectedTools.size > 0 && (
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-600">
+                      {selectedTools.size} tool{selectedTools.size !== 1 ? 's' : ''} selected
+                    </span>
+                    <button
+                      onClick={handleAddTools}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
+                    >
+                      <Check className="w-4 h-4" />
+                      Add {selectedTools.size} tool{selectedTools.size !== 1 ? 's' : ''}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Tools Grid */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-2 gap-4">
+                {filteredTools.map((tool) => (
+                  <div
+                    key={tool.id}
+                    className={`border rounded-xl p-4 cursor-pointer transition-all ${
+                      selectedTools.has(tool.id)
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                    }`}
+                    onClick={() => toggleToolSelection(tool.id)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 ${tool.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                        <tool.icon className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium text-gray-900 text-sm">{tool.name}</h4>
+                          {selectedTools.has(tool.id) && (
+                            <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
+                              <Check className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-600 mb-2 line-clamp-2">{tool.description}</p>
+                        <div className="text-xs text-gray-500">by {tool.provider}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {filteredTools.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <Search className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="font-medium mb-1">No tools found</p>
+                  <p className="text-sm">Try adjusting your search or category filter</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                {selectedTools.size > 0 && (
+                  <button
+                    onClick={handleAddTools}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    Add {selectedTools.size} tool{selectedTools.size !== 1 ? 's' : ''}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    );
   };
 
   // Tool Wizard Component
@@ -559,7 +1014,10 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
           ))}
 
           {/* Add New Tool Card */}
-          <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-gray-400 transition-colors cursor-pointer">
+          <div 
+            onClick={() => setShowToolLibrary(true)}
+            className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-gray-400 transition-colors cursor-pointer"
+          >
             <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mb-4">
               <Plus className="w-6 h-6 text-gray-500" />
             </div>
@@ -720,6 +1178,19 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Tool Library Modal */}
+      <AnimatePresence>
+        {showToolLibrary && (
+          <ToolLibrary
+            onClose={() => setShowToolLibrary(false)}
+            onSelectTools={(tools) => {
+              // Handle adding selected tools
+              console.log('Selected tools:', tools);
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Tool Wizard Modal */}
       <AnimatePresence>
