@@ -62,7 +62,15 @@ import {
   BarChart,
   PieChart,
   LineChart,
-  Activity
+  Activity,
+  Type,
+  List,
+  ToggleLeft,
+  Upload as UploadIcon,
+  Table,
+  MoreHorizontal,
+  Layers,
+  Sparkles
 } from 'lucide-react';
 
 interface AIAgentBuilderNewProps {
@@ -105,11 +113,34 @@ interface AvailableTool {
   popular?: boolean;
 }
 
+interface CustomToolStep {
+  id: string;
+  type: 'llm' | 'api' | 'knowledge' | 'google' | 'python' | 'javascript';
+  name: string;
+  description: string;
+  config: Record<string, any>;
+}
+
+interface CustomTool {
+  id: string;
+  name: string;
+  description: string;
+  inputs: Array<{
+    id: string;
+    name: string;
+    type: string;
+    description: string;
+    required: boolean;
+  }>;
+  steps: CustomToolStep[];
+}
+
 const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) => {
   const [activeTab, setActiveTab] = useState('tools');
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [showToolWizard, setShowToolWizard] = useState(false);
   const [showToolLibrary, setShowToolLibrary] = useState(false);
+  const [showNewToolBuilder, setShowNewToolBuilder] = useState(false);
 
   const [currentAgent] = useState({
     id: `agent_${Date.now()}`,
@@ -425,6 +456,408 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
     }
   };
 
+  // New Tool Builder Component
+  const NewToolBuilder = ({ onClose }: { onClose: () => void }) => {
+    const [currentStep, setCurrentStep] = useState(0);
+    const [toolData, setToolData] = useState<CustomTool>({
+      id: `custom_tool_${Date.now()}`,
+      name: '',
+      description: '',
+      inputs: [],
+      steps: []
+    });
+
+    const [showInputDropdown, setShowInputDropdown] = useState(false);
+    const [showStepDropdown, setShowStepDropdown] = useState(false);
+
+    const inputTypes = [
+      { id: 'text', label: 'Text', icon: Type, description: 'Single line text input' },
+      { id: 'long_text', label: 'Long text', icon: FileText, description: 'Multi-line text area' },
+      { id: 'number', label: 'Number', icon: Hash, description: 'Numeric input' },
+      { id: 'json', label: 'JSON', icon: Code, description: 'JSON object input' },
+      { id: 'file_url', label: 'File to URL', icon: UploadIcon, description: 'File upload to URL' },
+      { id: 'table', label: 'Table', icon: Table, description: 'Structured table data' },
+      { id: 'more', label: 'More', icon: MoreHorizontal, description: 'Additional input types' }
+    ];
+
+    const stepTypes = [
+      { id: 'llm', label: 'LLM', icon: Brain, description: 'Use a large language model such as GPT', color: 'bg-purple-600' },
+      { id: 'knowledge', label: 'Knowledge', icon: Database, description: 'Search knowledge bases', color: 'bg-green-600' },
+      { id: 'google', label: 'Google', icon: Search, description: 'Search the web for keywords using Google', color: 'bg-blue-500' },
+      { id: 'api', label: 'API', icon: Webhook, description: 'Run an API request', color: 'bg-indigo-600' },
+      { id: 'python', label: 'Python', icon: Code, description: 'Run Python code', color: 'bg-yellow-600' },
+      { id: 'javascript', label: 'Javascript Code', icon: Code, description: 'Run Javascript code', color: 'bg-orange-500' }
+    ];
+
+    const addInput = (type: string) => {
+      const newInput = {
+        id: `input_${Date.now()}`,
+        name: `Input ${toolData.inputs.length + 1}`,
+        type,
+        description: '',
+        required: false
+      };
+      setToolData(prev => ({
+        ...prev,
+        inputs: [...prev.inputs, newInput]
+      }));
+      setShowInputDropdown(false);
+    };
+
+    const addStep = (type: string) => {
+      const newStep: CustomToolStep = {
+        id: `step_${Date.now()}`,
+        type: type as any,
+        name: `${type.toUpperCase()} Step`,
+        description: '',
+        config: {}
+      };
+      setToolData(prev => ({
+        ...prev,
+        steps: [...prev.steps, newStep]
+      }));
+      setShowStepDropdown(false);
+    };
+
+    const removeInput = (inputId: string) => {
+      setToolData(prev => ({
+        ...prev,
+        inputs: prev.inputs.filter(input => input.id !== inputId)
+      }));
+    };
+
+    const removeStep = (stepId: string) => {
+      setToolData(prev => ({
+        ...prev,
+        steps: prev.steps.filter(step => step.id !== stepId)
+      }));
+    };
+
+    const getStepIcon = (type: string) => {
+      const stepType = stepTypes.find(s => s.id === type);
+      return stepType?.icon || Code;
+    };
+
+    const getStepColor = (type: string) => {
+      const stepType = stepTypes.find(s => s.id === type);
+      return stepType?.color || 'bg-gray-600';
+    };
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+        >
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={onClose}
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span className="text-sm">Tools</span>
+                </button>
+                <span className="text-gray-400">/</span>
+                <span className="text-sm text-gray-600">Untitled tool</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-500">Unsaved</span>
+                <button className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                  Save changes
+                </button>
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+                  <Play className="w-4 h-4" />
+                  Run tool
+                </button>
+              </div>
+            </div>
+
+            {/* Tool Title and Description */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <Plus className="w-6 h-6 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  value={toolData.name}
+                  onChange={(e) => setToolData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Type title..."
+                  className="text-2xl font-semibold text-gray-900 bg-transparent border-none outline-none placeholder-gray-400 flex-1"
+                />
+              </div>
+              <input
+                type="text"
+                value={toolData.description}
+                onChange={(e) => setToolData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Type short description..."
+                className="text-gray-600 bg-transparent border-none outline-none placeholder-gray-400 w-full"
+              />
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-8">
+            {/* Inputs Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <Zap className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Inputs</h3>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button className="px-3 py-1.5 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                    Configure
+                  </button>
+                  <button className="px-3 py-1.5 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm flex items-center gap-2">
+                    <Bot className="w-4 h-4" />
+                    For Agent
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-gray-600 text-sm">Add type of input:</p>
+
+              {/* Input Type Buttons */}
+              <div className="flex flex-wrap gap-2">
+                {inputTypes.map((inputType) => (
+                  <button
+                    key={inputType.id}
+                    onClick={() => inputType.id === 'more' ? setShowInputDropdown(!showInputDropdown) : addInput(inputType.id)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm flex items-center gap-2"
+                  >
+                    <inputType.icon className="w-4 h-4" />
+                    {inputType.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Input Dropdown */}
+              {showInputDropdown && (
+                <div className="relative">
+                  <div className="absolute top-2 left-0 w-80 bg-white border border-gray-200 rounded-xl shadow-lg z-10 p-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium text-gray-900">Select input...</span>
+                        <button
+                          onClick={() => setShowInputDropdown(false)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs font-medium text-gray-500 mb-2">Options</div>
+                        {[
+                          { id: 'checkbox', label: 'Checkbox', icon: CheckCircle },
+                          { id: 'text_list', label: 'Text list', icon: List },
+                          { id: 'json_list', label: 'List of JSONs', icon: Code },
+                          { id: 'file_text', label: 'File to text', icon: FileText },
+                          { id: 'multiple_files', label: 'Multiple files to URLs', icon: UploadIcon },
+                          { id: 'api_key', label: 'API key input', icon: Key },
+                          { id: 'oauth', label: 'OAuth account', icon: Shield }
+                        ].map((option) => (
+                          <button
+                            key={option.id}
+                            onClick={() => addInput(option.id)}
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                          >
+                            <option.icon className="w-4 h-4 text-gray-600" />
+                            <span className="text-sm text-gray-900">{option.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Added Inputs */}
+              {toolData.inputs.map((input) => (
+                <div key={input.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={input.name}
+                        onChange={(e) => setToolData(prev => ({
+                          ...prev,
+                          inputs: prev.inputs.map(i => i.id === input.id ? { ...i, name: e.target.value } : i)
+                        }))}
+                        className="font-medium text-gray-900 bg-transparent border-none outline-none mb-2"
+                        placeholder="Input name"
+                      />
+                      <input
+                        type="text"
+                        value={input.description}
+                        onChange={(e) => setToolData(prev => ({
+                          ...prev,
+                          inputs: prev.inputs.map(i => i.id === input.id ? { ...i, description: e.target.value } : i)
+                        }))}
+                        className="text-sm text-gray-600 bg-transparent border-none outline-none w-full"
+                        placeholder="Input description"
+                      />
+                    </div>
+                    <button
+                      onClick={() => removeInput(input.id)}
+                      className="text-gray-400 hover:text-red-600 p-1"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Steps Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Layers className="w-4 h-4 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Steps</h3>
+              </div>
+
+              <p className="text-gray-600 text-sm">
+                Define the logic of your tool. Chain together LLM prompts, call APIs, run code and more.
+              </p>
+
+              {/* Step Type Buttons */}
+              <div className="flex flex-wrap gap-3">
+                <div className="relative">
+                  <button
+                    onClick={() => setShowStepDropdown(!showStepDropdown)}
+                    className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Step
+                  </button>
+
+                  {/* Step Dropdown */}
+                  {showStepDropdown && (
+                    <div className="absolute top-12 left-0 w-80 bg-white border border-gray-200 rounded-xl shadow-lg z-10 p-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-medium text-gray-900">Search 9,000+ tool steps...</span>
+                          <button
+                            onClick={() => setShowStepDropdown(false)}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        
+                        <div className="flex gap-2 mb-4">
+                          <button className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm">All</button>
+                          <button className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Your tools</button>
+                          <button className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">From community</button>
+                        </div>
+
+                        <div className="space-y-2">
+                          {stepTypes.map((stepType) => (
+                            <button
+                              key={stepType.id}
+                              onClick={() => addStep(stepType.id)}
+                              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-left border border-gray-100"
+                            >
+                              <div className={`w-8 h-8 ${stepType.color} rounded-lg flex items-center justify-center`}>
+                                <stepType.icon className="w-4 h-4 text-white" />
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">{stepType.label}</div>
+                                <div className="text-xs text-gray-600">{stepType.description}</div>
+                              </div>
+                              <div className="ml-auto">
+                                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">Verified</span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {stepTypes.slice(0, 5).map((stepType) => (
+                  <button
+                    key={stepType.id}
+                    onClick={() => addStep(stepType.id)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm flex items-center gap-2"
+                  >
+                    <stepType.icon className="w-4 h-4" />
+                    {stepType.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Added Steps */}
+              {toolData.steps.map((step, index) => {
+                const StepIcon = getStepIcon(step.type);
+                const stepColor = getStepColor(step.type);
+                
+                return (
+                  <div key={step.id} className="bg-white border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-10 h-10 ${stepColor} rounded-lg flex items-center justify-center`}>
+                          <StepIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={step.name}
+                            onChange={(e) => setToolData(prev => ({
+                              ...prev,
+                              steps: prev.steps.map(s => s.id === step.id ? { ...s, name: e.target.value } : s)
+                            }))}
+                            className="font-medium text-gray-900 bg-transparent border-none outline-none mb-1"
+                            placeholder="Step name"
+                          />
+                          <input
+                            type="text"
+                            value={step.description}
+                            onChange={(e) => setToolData(prev => ({
+                              ...prev,
+                              steps: prev.steps.map(s => s.id === step.id ? { ...s, description: e.target.value } : s)
+                            }))}
+                            className="text-sm text-gray-600 bg-transparent border-none outline-none w-full"
+                            placeholder="Step description"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">Verified</span>
+                        <button
+                          onClick={() => removeStep(step.id)}
+                          className="text-gray-400 hover:text-red-600 p-1"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    );
+  };
+
   // Tool Library Component
   const ToolLibrary = ({ onClose, onSelectTools }: { onClose: () => void; onSelectTools: (tools: AvailableTool[]) => void }) => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -518,7 +951,13 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
                 />
               </div>
               
-              <button className="w-full mt-3 px-4 py-2 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium flex items-center justify-center gap-2">
+              <button 
+                onClick={() => {
+                  onClose();
+                  setShowNewToolBuilder(true);
+                }}
+                className="w-full mt-3 px-4 py-2 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+              >
                 <Plus className="w-4 h-4" />
                 New tool
               </button>
@@ -1178,6 +1617,15 @@ const AIAgentBuilderNew: React.FC<AIAgentBuilderNewProps> = ({ agent, onBack }) 
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* New Tool Builder Modal */}
+      <AnimatePresence>
+        {showNewToolBuilder && (
+          <NewToolBuilder
+            onClose={() => setShowNewToolBuilder(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Tool Library Modal */}
       <AnimatePresence>
